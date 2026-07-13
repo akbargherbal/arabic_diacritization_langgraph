@@ -1,5 +1,12 @@
 # AGENTS.md — Persistent Memory
 
+> **Role of this file**: this is persistent onboarding memory for humans and
+> for an LLM assistant working on the codebase across sessions. Nothing in
+> `main.py` or `langgraph_pipeline.py` reads or loads this file at runtime —
+> it documents intended behavior and non-negotiable rules; the actual
+> enforcement lives in the graph's code (see `docs/CONFIGURATION.md` §2 for
+> how the rules below are technically enforced).
+
 ## Charter
 
 This system diacritizes batches of normalized Arabic verses to match a

@@ -73,7 +73,7 @@ For a detailed walkthrough of the pipeline flow, subagents, and the mechanical c
 1. Clone the repository and navigate to the project root:
 
    ```bash
-   cd arabic_diacritization_deepagent
+   cd arabic_diacritization_langgraph
    ```
 
 2. Install the required dependencies:
@@ -138,5 +138,5 @@ For advanced configuration, auditing, and architectural specifics, refer to the 
 
 - **[AGENTS.md](AGENTS.md)**: Persistent memory, non-negotiable behavior constraints, and project rules.
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Deep dive into the orchestrator loop, subagents, validation axes, and the case-ending swap reconciliation tool.
-- **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)**: Technical breakdown of DeepAgents security paths, local database checkpointing settings, and supported LLM backends (Anthropic, OpenAI, DeepSeek, and NVIDIA NIM).
+- **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)**: Technical breakdown of the tool-grant-based subagent security model, local database checkpointing settings, and supported LLM backends (Anthropic, OpenAI, DeepSeek, and NVIDIA NIM).
 - **[docs/TRACING.md](docs/TRACING.md)**: Guide to using `traces.sqlite` and the trace reporting CLI to audit latency, token counts, and execution runs.

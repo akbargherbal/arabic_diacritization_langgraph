@@ -6,6 +6,14 @@ provider API key. Proves the SAME thing Task 1.5 asks for: exactly one dispatch
 wave per pass, in strict alternation with verify_batch_tool, with no code
 path for a second same-pass wave.
 
+Phase 1 update (PHASED_PLAN_v4_Diacritizer_Refactor.md): dispatch is now one
+call per BATCH, not one call per verse, so this mocks `_diacritize_batch`
+(taking the whole `targets` list and returning a dict keyed by verse_id)
+instead of the retired per-verse `_diacritize_one_verse`. The per-verse
+CALL_LOG entries below are still logged individually (one per verse in the
+batch) so the existing wave/alternation assertions need no changes -- only
+the mocked function's shape changed, not what's being proven.
+
 Run: PYTHONPATH=. python3 scripts/contract_test_pass_loop.py
 """
 
@@ -17,9 +25,15 @@ import langgraph_pipeline as lp
 CALL_LOG = []  # list of ("dispatch", pass_number, [verse_ids]) / ("verify", pass_number)
 
 
-def fake_diacritize_one_verse(model, verse, meter_name, report_path, pass_number, config=None):
-    CALL_LOG.append(("dispatch_verse", pass_number, verse["verse_id"]))
-    return {"sadr": f"DIACRITIZED[{verse['sadr']}]", "ajuz": f"DIACRITIZED[{verse.get('ajuz', '')}]"}
+def fake_diacritize_batch(model, targets, meter_name, report_path, pass_number, config=None):
+    drafts = {}
+    for verse in targets:
+        CALL_LOG.append(("dispatch_verse", pass_number, verse["verse_id"]))
+        drafts[verse["verse_id"]] = {
+            "sadr": f"DIACRITIZED[{verse['sadr']}]",
+            "ajuz": f"DIACRITIZED[{verse.get('ajuz', '')}]",
+        }
+    return drafts
 
 
 # Simulate: pass 1 -> verse A locks, verse B and C stay broken;
@@ -47,7 +61,7 @@ def main():
         {"verse_id": "C", "sadr": "seed c", "ajuz": "c2"},
     ]
 
-    with patch.object(lp, "_diacritize_one_verse", side_effect=fake_diacritize_one_verse), \
+    with patch.object(lp, "_diacritize_batch", side_effect=fake_diacritize_batch), \
          patch.object(lp, "verify_batch_tool", side_effect=fake_verify_batch_tool), \
          patch.object(lp, "record_locked_verse_tool", return_value={"recorded": True}), \
          patch.object(lp, "log_unresolved_tool", return_value={"logged": True}), \

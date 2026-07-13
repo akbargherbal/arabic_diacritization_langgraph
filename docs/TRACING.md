@@ -89,5 +89,23 @@ LangSmith is used alongside local SQLite tracking to support hosted-dashboard de
 ```bash
 export LANGCHAIN_TRACING_V2=true
 export LANGCHAIN_API_KEY="your-langsmith-key"
-export LANGCHAIN_PROJECT="arabic-diacritization-deepagent"
+export LANGCHAIN_PROJECT="arabic-diacritization-langgraph"
 ```
+
+---
+
+## 5. Known issue: Section 2's attribution mechanism predates the current dispatch shape
+
+Section 2 above describes attribution via watching a `task` tool call and
+reading its `subagent_type` argument
+(`tools/tracing.py:DISPATCH_TOOL_NAME = "task"`). That matches the retired
+DeepAgents dispatch pattern, where subagents were invoked through a shared
+`task` tool. The current `langgraph_pipeline.py` does not dispatch subagents
+that way — `dispatch_diacritizer`, `run_irab_checker_batch`,
+`run_naturalness_critic_batch`, etc. are called as plain Python functions
+from graph nodes, with no `task` tool call anywhere in the loop. This means
+the per-agent breakdown in `python -m tools.trace_report`'s output (the
+`agent` column) is likely mis-attributing every LLM call to `orchestrator`
+rather than the correct subagent, since the callback's only attribution path
+never fires. See `PHASED_PLAN_v4_Diacritizer_Refactor.md`, Phase 8, for the
+planned fix — not corrected yet as of this note.

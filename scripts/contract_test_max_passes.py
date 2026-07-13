@@ -7,6 +7,12 @@ unresolved_max_passes, and never trigger a 4th dispatch wave. A
 structurally_incompatible verse must be excluded from every subsequent dispatch
 wave and logged immediately.
 
+Phase 1 update (PHASED_PLAN_v4_Diacritizer_Refactor.md): dispatch is now one
+call per BATCH, not one call per verse -- this mocks `_diacritize_batch`
+(taking the whole `targets` list) instead of the retired per-verse
+`_diacritize_one_verse`. Per-verse CALL_LOG entries are still logged
+individually so the existing assertions need no other changes.
+
 Run: PYTHONPATH=. python3 scripts/contract_test_max_passes.py
 """
 
@@ -18,9 +24,15 @@ CALL_LOG = []
 UNRESOLVED_LOGS = []
 
 
-def fake_diacritize_one_verse(model, verse, meter_name, report_path, pass_number, config=None):
-    CALL_LOG.append(("dispatch_verse", pass_number, verse["verse_id"]))
-    return {"sadr": f"draft_p{pass_number}[{verse['sadr']}]", "ajuz": verse.get("ajuz", "")}
+def fake_diacritize_batch(model, targets, meter_name, report_path, pass_number, config=None):
+    drafts = {}
+    for verse in targets:
+        CALL_LOG.append(("dispatch_verse", pass_number, verse["verse_id"]))
+        drafts[verse["verse_id"]] = {
+            "sadr": f"draft_p{pass_number}[{verse['sadr']}]",
+            "ajuz": verse.get("ajuz", ""),
+        }
+    return drafts
 
 
 # NEVER_PASSES ("N") stays broken every pass, forever.
@@ -54,7 +66,7 @@ def main():
         {"verse_id": "S", "sadr": "structurally bad", "ajuz": ""},
     ]
 
-    with patch.object(lp, "_diacritize_one_verse", side_effect=fake_diacritize_one_verse), \
+    with patch.object(lp, "_diacritize_batch", side_effect=fake_diacritize_batch), \
          patch.object(lp, "verify_batch_tool", side_effect=fake_verify_batch_tool), \
          patch.object(lp, "record_locked_verse_tool", return_value={"recorded": True}), \
          patch.object(lp, "log_unresolved_tool", side_effect=fake_log_unresolved), \

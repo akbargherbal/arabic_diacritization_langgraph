@@ -46,7 +46,6 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Annotated, Any, Optional, TypedDict
 
@@ -77,8 +76,8 @@ from subagents.naturalness_critic import (
 from runtime import MAX_CORRECTION_PASSES, PROJECT_ROOT
 
 DIACRITIZER_MODEL_KWARGS = dict(
-    max_completion_tokens=24576,
-    max_tokens=24576,
+    max_completion_tokens=65536,
+    max_tokens=65536,
     # Session 4 finding: model_provider.py's _REASONING_SUPPRESSION table
     # defaults deepseek to thinking DISABLED, which was Bug 2's fix (Session
     # 3) -- but for THIS callsite specifically, disabling the thinking
@@ -90,9 +89,18 @@ DIACRITIZER_MODEL_KWARGS = dict(
     # against real verses. get_model()'s explicit-kwarg-wins-over-setdefault
     # contract (see model_provider.py docstring) means this overrides the
     # module default for this call only -- every other provider/callsite is
-    # unaffected. The token cap is raised accordingly: reasoning_content and
-    # content share the same completion budget, and real verses have been
-    # observed using up to ~20.5k reasoning tokens in a single call.
+    # unaffected.
+    #
+    # Phase 1 (PHASED_PLAN_v4_Diacritizer_Refactor.md) note: this cap was
+    # 24576, tuned for ONE verse per call (~20.5k observed reasoning tokens
+    # for a single verse in the pre-refactor per-verse dispatch). Dispatch
+    # is now one call per BATCH (up to ~12 verses per dataset/inputs/*.jsonl
+    # file), so this is raised to 65536 as a starting estimate, not a
+    # validated number -- Phase 1's checkpoint requires confirming via
+    # `python -m tools.trace_report` that real batch calls aren't hitting
+    # this ceiling (truncated JSON output is the symptom to watch for).
+    # Adjust up (or down, if cost/latency is a concern and it's never come
+    # close) once real telemetry exists.
     extra_body={"thinking": {"type": "enabled"}},
 )
 
@@ -184,77 +192,84 @@ def _current_thread_id(state: BatchState) -> str:
 # ===========================================================================
 
 
-def _diacritize_one_verse(
+def _diacritize_batch(
     model,
-    verse: dict,
+    targets: list[dict],
     meter_name: str,
     report_path: Optional[str],
     pass_number: int,
     config: Optional[RunnableConfig] = None,
 ) -> dict:
-    """One verse, one model call (plus any tool-calls it makes to
-    meter_schema_tool / read_workspace_file), matching Task 1.2's "one
-    dispatch per verse per pass" contract. Bound tools mirror exactly what
-    subagents/diacritizer.py granted under DeepAgents (Task 2.1) -- no more,
-    no less.
+    """Phase 1 (PHASED_PLAN_v4_Diacritizer_Refactor.md): ONE model call for
+    the entire pass's target-verse array (plus any tool-calls it makes to
+    meter_schema_tool / read_workspace_file), not one call per verse.
 
-    BUGFIX (Session 5): this previously took no meter_name argument, and the
-    pass-1 prompt used an escaped f-string brace ('{{meter}}', which prints
-    the literal text "{meter}") instead of an actual substitution -- so the
-    model was never told which meter to target on pass 1. Never caught
-    earlier because every diagnostic script hardcodes 'ramal' as a plain
-    string rather than exercising this function.
+    This replaces the prior `_diacritize_one_verse` + `ThreadPoolExecutor`
+    fan-out, which was the direct cause of the refactor brief's core
+    objection ("here is a JSON object of undiacritized verses -- not one
+    verse at a time!"). Bound tools are unchanged from the per-verse version
+    (`meter_schema_tool`, `read_workspace_file`) -- only the unit of
+    dispatch changed, from one verse to the whole batch.
 
-    BUGFIX (Session 5, tracing gap): this previously called bound.invoke(
-    messages) with no config, so trace.callback (set up in run_one_batch's
-    run_config) never attached to per-verse diacritizer calls -- they were
-    invisible to tools/trace_report.py despite the rest of the graph being
-    traced. config is now threaded in from dispatch_diacritizer, which
-    receives it because LangGraph injects the active RunnableConfig into
-    any node function that declares a `config` parameter. It's optional
-    (default None) so direct/test calls to this function without a config
-    still work -- model.invoke(..., config=None) is a no-op, not an error.
+    Carries forward two bugfixes from the per-verse version, now scoped to
+    the batch: (1) meter_name is always substituted into the prompt on
+    every pass, never left as a literal placeholder; (2) `config` is
+    threaded through so this call attaches to the active trace (see
+    tools/tracing.py -- though note PHASED_PLAN_v4 Phase 8 flags that
+    per-agent attribution itself needs a separate fix under the current
+    LangGraph dispatch shape).
     """
     bound = model.bind_tools([meter_schema_tool, read_workspace_file])
 
+    verses_payload = json.dumps(
+        [
+            {"verse_id": v["verse_id"], "sadr": v["sadr"], "ajuz": v.get("ajuz", "")}
+            for v in targets
+        ],
+        ensure_ascii=False,
+    )
+
     if pass_number == 1:
         user_content = (
-            f"Diacritize this verse for meter '{meter_name}' (pass 1, no prior "
-            f"correction report -- first attempt):\n"
-            f"verse_id: {verse['verse_id']}\n"
-            f"sadr: {verse['sadr']}\n"
-            f"ajuz: {verse.get('ajuz', '')}\n\n"
-            f"Return ONLY a JSON object: "
-            f'{{"verse_id": "{verse["verse_id"]}", "sadr": "...", "ajuz": "..."}} '
-            f"-- the corrected/diacritized text, no commentary, no markdown fences."
+            f"Diacritize every verse below for meter '{meter_name}' (pass 1, "
+            f"first attempt -- no prior correction report).\n\n"
+            f"Input verses (JSON array, {len(targets)} verse(s)):\n{verses_payload}\n\n"
+            f"Return a JSON array, same order, one object per verse_id: "
+            f'[{{"verse_id": "...", "sadr": "...", "ajuz": "..."}}, ...] '
+            f"-- diacritized text only, no commentary, no markdown fences."
         )
     else:
         user_content = (
-            f"Correct this verse (pass {pass_number}) for meter '{meter_name}'. "
-            f"Its prior draft failed verify_batch_tool. Read the correction report "
-            f"at report_path via read_workspace_file before drafting -- it names "
-            f"exactly which foot diverged and the prescribed fix. Do not "
-            f"re-diacritize from scratch ignoring it.\n"
-            f"verse_id: {verse['verse_id']}\n"
-            f"original sadr: {verse['sadr']}\n"
-            f"original ajuz: {verse.get('ajuz', '')}\n"
+            f"Correct every verse below (pass {pass_number}) for meter "
+            f"'{meter_name}'. Each failed verify_batch_tool last pass. Read "
+            f"the correction report at report_path via read_workspace_file "
+            f"before drafting -- it names, per verse_id, exactly which foot "
+            f"diverged and the prescribed fix. Do not re-diacritize any "
+            f"verse from scratch while ignoring the report's guidance for it.\n\n"
             f"report_path: {report_path}\n\n"
-            f'Return ONLY a JSON object: {{"verse_id": "{verse["verse_id"]}", '
-            f'"sadr": "...", "ajuz": "..."}} -- no commentary, no markdown fences.'
+            f"Input verses (JSON array, {len(targets)} verse(s)):\n{verses_payload}\n\n"
+            f"Return a JSON array, same order, one object per verse_id: "
+            f'[{{"verse_id": "...", "sadr": "...", "ajuz": "..."}}, ...] '
+            f"-- no commentary, no markdown fences."
         )
 
     messages = [SystemMessage(content=DIACRITIZER_SYSTEM_PROMPT), HumanMessage(content=user_content)]
 
-    # Bounded tool-calling loop -- mirrors the pattern subagents/diacritizer.py
-    # used under create_agent(); capped defensively so a misbehaving model
-    # can't loop forever inside one dispatch.
+    # Bounded tool-calling loop -- same pattern as before; capped defensively
+    # so a misbehaving model can't loop forever inside one dispatch.
     for _ in range(6):
         ai_msg = bound.invoke(messages, config=config)
         messages.append(ai_msg)
         tool_calls = getattr(ai_msg, "tool_calls", None) or []
         if not tool_calls:
             parsed = _extract_json(ai_msg.content)
-            return {"sadr": parsed["sadr"], "ajuz": parsed.get("ajuz", "")}
+            drafts: dict = {}
+            for item in parsed:
+                drafts[item["verse_id"]] = {
+                    "sadr": item["sadr"],
+                    "ajuz": item.get("ajuz", ""),
+                }
+            return drafts
         for tc in tool_calls:
             if tc["name"] == "meter_schema_tool":
                 result = meter_schema_tool(**tc["args"])
@@ -264,29 +279,29 @@ def _diacritize_one_verse(
                 result = f"ERROR: unknown tool {tc['name']}"
             messages.append(ToolMessage(content=json.dumps(result, ensure_ascii=False), tool_call_id=tc["id"]))
 
-    raise RuntimeError(f"diacritizer tool-loop did not converge for verse {verse['verse_id']}")
+    raise RuntimeError(
+        f"diacritizer tool-loop did not converge for a batch of {len(targets)} "
+        f"verse(s) (pass {pass_number})"
+    )
 
 
 def make_dispatch_diacritizer(diacritizer_model):
     def dispatch_diacritizer(state: BatchState, config: RunnableConfig) -> dict:
-        """Task 1.2/2.1/3.4: dispatch exactly one diacritizer call per
-        target verse, in parallel. Pass 1 dispatches ALL input verses
-        unconditionally (Structural Incompatibility Rule -- pyarud requires
-        diacritized text, so nothing can be pre-filtered before a first
-        draft exists). From pass 2 on, dispatch only verses currently
-        `broken` (never `locked`, never `structurally_incompatible` -- both
-        are excluded by construction here, satisfying Task 3.4's
-        verification checkpoint).
+        """Dispatch exactly ONE diacritizer call per pass, carrying every
+        target verse as a single JSON array (Phase 1). Pass 1 dispatches
+        ALL input verses unconditionally (Structural Incompatibility Rule
+        -- pyarud requires diacritized text, so nothing can be pre-filtered
+        before a first draft exists). From pass 2 on, dispatch only verses
+        currently `broken` (never `locked`, never
+        `structurally_incompatible` -- both are excluded by construction).
 
         Contains NO reference to pass_number-driven looping, verify_batch_tool,
-        or any decision about whether to dispatch again -- see Task 1.2's
-        Success Criteria and this module's docstring on the Send question.
+        or any decision about whether to dispatch again -- that's still
+        route_after_verify's job alone, unchanged by this refactor.
 
-        BUGFIX (Session 5, tracing gap): now declares `config` -- LangGraph
-        injects the active RunnableConfig (which carries run_one_batch's
-        trace.callback) into any node function with this parameter. It's
-        passed straight through to every parallel _diacritize_one_verse
-        call so those model calls actually show up in the trace.
+        Declares `config` so LangGraph injects the active RunnableConfig
+        (which carries run_one_batch's trace.callback) into the single
+        underlying model call.
         """
         pass_number = state.get("pass_number", 1)
         if pass_number == 1:
@@ -300,23 +315,9 @@ def make_dispatch_diacritizer(diacritizer_model):
 
         meter_name = state["meter_name"]
         report_path = state.get("report_path")
-        drafts: dict = {}
-        with ThreadPoolExecutor(max_workers=max(1, len(targets))) as pool:
-            futures = {
-                pool.submit(
-                    _diacritize_one_verse,
-                    diacritizer_model,
-                    v,
-                    meter_name,
-                    report_path,
-                    pass_number,
-                    config,
-                ): v["verse_id"]
-                for v in targets
-            }
-            for fut in as_completed(futures):
-                vid = futures[fut]
-                drafts[vid] = fut.result()
+        drafts = _diacritize_batch(
+            diacritizer_model, targets, meter_name, report_path, pass_number, config
+        )
 
         return {"drafts": drafts}
 
