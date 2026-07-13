@@ -101,6 +101,16 @@ framework is this."
   the corrected docs for accuracy.
 
 ### Phase 1 — Redefine the diacritizer's contract: batch-in, batch-out `[x]`
+**Live-run checkpoint CLOSED in Session 2 (continued).** First-ever successful
+end-to-end run: `python main.py 3VERSES_1919_batch_00.jsonl` completed
+without crashing, diacritizer batch call → verify → advisory → commit all
+worked. 2/3 verses locked at 100% and committed to `dataset/verses.jsonl`;
+1/3 (`1919-5`) rejected as `structurally_incompatible` at 93% (see Phase 2
+notes below — open question, not a blocker). Diacritizer token usage for
+this batch: 15,818 total tokens (2,978 in + 12,840 out) — comfortably under
+the 65,536 cap, no truncation. This required one real bug fix, logged
+below — the checkpoint is closed *with* that fix applied, not against the
+original Phase 1 code.
 - Replace `dispatch_diacritizer`'s per-verse `ThreadPoolExecutor` fan-out with
   a single model call carrying the *entire* pass's target-verse array as one
   JSON payload; parse back a JSON array, not N separate objects.
@@ -125,8 +135,19 @@ framework is this."
 - Confirm `verify_batch_tool`'s correction_report still gives the (now
   batch-mode) diacritizer enough signal per broken verse without
   over-specifying mechanics.
-- Keep the 3-pass cap and lock-on-pass behavior unchanged (`AGENTS.md` rules
-  2/5 are correct as written) — this phase is about trimming, not replacing.
+- **Session 2 (continued) finding — open question, not yet investigated:**
+  during the first successful live run, verse `1919-5` scored 93% and was
+  auto-routed to `structurally_incompatible` (permanent rejection, no
+  pass-2 retry) rather than `broken` (gets a retry), because
+  `verify_batch_tool` treats any `extra_bits is not None` as structural/
+  letter-level regardless of how small. pyarud's own report on this verse
+  described the fix as a foot reweight + removing one trailing mora —
+  language that reads as diacritic-fixable, not letter-level. Unclear
+  whether the classifier is correctly conservative here or too aggressive
+  on near-misses. User deferred investigation — pick this up before
+  finalizing Phase 2's verify→correct loop simplification, since it's the
+  same code path (`verify_batch_tool`'s locked/broken/structurally_incompatible
+  triage in `tools/prosody_tools.py`).
 - **Session 2 finding (not yet acted on):** `generate_poem_correction_report`
   duplicates every fix prescription verbatim — once inline per-verse under
   "CORRECTION PRESCRIPTION", again in the poem-level "CONSOLIDATED FIX LIST"
@@ -216,4 +237,14 @@ that session's `Session_N_Handover.md`.)*
   drift). Did non-live Phase 2 prep: read `verify_batch_tool` +
   `generate_poem_correction_report`, ran it against a real batch via pyarud
   (deterministic, no LLM needed), found real duplication/verbosity in the
-  report (see Phase 2 notes above). No code changed this session.
+  report (see Phase 2 notes above).
+  **Continued same session, user ran live locally:** first-ever successful
+  end-to-end live run after fixing a real bug in `_extract_json` (model
+  responses with conversational preamble before/around a JSON fence weren't
+  being parsed — old regex only matched if the fence was the entire
+  string). Fix verified against the real captured failing content plus 4
+  other cases, no regressions in pytest/contract scripts. Phase 1's
+  live-run checkpoint is now closed. Surfaced a new open question during
+  that run (see Phase 2 notes: `1919-5` near-miss auto-routed to
+  `structurally_incompatible`) — logged, not investigated yet per user's
+  call. Fix given to user to commit/push; push not confirmed in-session.
