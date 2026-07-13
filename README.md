@@ -1,4 +1,4 @@
-# Arabic Prosody Diacritization — Dataset Builder (DeepAgents PoC)
+# Arabic Prosody Diacritization — LangGraph Dataset Builder
 
 This project is a dataset generation pipeline designed to produce metrically sound, letter-faithful, and grammatically plausible diacritized Arabic poetry. It leverages Large Language Models (LLMs) as generative drafters while enforcing deterministic programmatic quality criteria through automated validation gates to assemble high-fidelity training data.
 
@@ -21,7 +21,8 @@ The primary purpose of this system is to compile training corpora of classical A
 
 ## 3. High-Level Architecture
 
-The system utilizes an orchestrator-agent pattern, segregating generation from verification to maintain strict quality boundaries.
+The system uses an explicit LangGraph state machine, segregating generation
+from verification to maintain strict quality boundaries.
 
 ```
        [ Raw Undiacritized Inputs ]

@@ -74,13 +74,7 @@ from subagents.naturalness_critic import (
     NATURALNESS_BATCH_SYSTEM_PROMPT,
 )
 
-# Task 3.5: reuse the existing hard cap rather than re-declaring it. Importing
-# from main.py (not re-hardcoding 3) is deliberate per the plan -- main.py's
-# import of `deepagents` is a heavier dependency than this module otherwise
-# needs, but MAX_CORRECTION_PASSES is a plain int constant and main.py has no
-# import-time side effects (see main.py's own "CHANGE (A4)" docstring note),
-# so this stays safe to import from a test or a fresh process.
-from main import MAX_CORRECTION_PASSES, PROJECT_ROOT
+from runtime import MAX_CORRECTION_PASSES, PROJECT_ROOT
 
 DIACRITIZER_MODEL_KWARGS = dict(
     max_completion_tokens=24576,
@@ -167,7 +161,12 @@ def read_workspace_file(file_path: str) -> str:
     `read_file` tool it had under DeepAgents' FilesystemMiddleware (see
     subagents/diacritizer.py); it cannot write anything.
     """
-    p = PROJECT_ROOT / file_path
+    workspace_root = (PROJECT_ROOT / "workspace").resolve()
+    p = (PROJECT_ROOT / file_path).resolve()
+    try:
+        p.relative_to(workspace_root)
+    except ValueError:
+        return "ERROR: read_workspace_file only permits files under workspace/"
     if not p.exists():
         return f"ERROR: file not found: {file_path}"
     return p.read_text(encoding="utf-8")
@@ -702,6 +701,12 @@ def build_langgraph_pipeline(use_checkpointer: bool = True):
     return graph, checkpoint_conn, checkpoint_db_path
 
 
+def build_studio_graph():
+    """LangGraph Studio factory; Studio owns checkpoint persistence itself."""
+    graph, _, _ = build_langgraph_pipeline(use_checkpointer=False)
+    return graph
+
+
 # ===========================================================================
 # Task 3.2: tracing integration + a convenience single-batch runner
 # ===========================================================================
@@ -709,16 +714,11 @@ def build_langgraph_pipeline(use_checkpointer: bool = True):
 
 def run_one_batch(graph, verses_batch: list[dict], meter: str, thread_id: str) -> dict:
     """Invoke the graph for one (input file, meter) batch under trace_run,
-    identically in spirit to main.py's per-batch loop -- see main.py for the
-    DeepAgents-engine equivalent this mirrors for the --engine=langgraph path.
-    Uses a ':lg' thread_id suffix (Task 3.1's dangerous-zone note) so
-    LangGraph checkpoints never collide with DeepAgents checkpoints under
-    the same nominal thread.
+    with a caller-supplied LangGraph-namespaced thread id.
     """
-    lg_thread_id = f"{thread_id}:lg"
-    with trace_run(label=meter, langgraph_thread_id=lg_thread_id) as trace:
+    with trace_run(label=meter, langgraph_thread_id=thread_id) as trace:
         run_config = {
-            "configurable": {"thread_id": lg_thread_id},
+            "configurable": {"thread_id": thread_id},
             "callbacks": [trace.callback],
         }
         print(f"[*] trace_id='{trace.trace_id}' (inspect with: python -m tools.trace_report --trace {trace.trace_id})")
@@ -737,11 +737,11 @@ def run_one_batch(graph, verses_batch: list[dict], meter: str, thread_id: str) -
             "structurally_incompatible": [],
             "drafts": {},
             "report_path": None,
-            "thread_id": lg_thread_id,
+            "thread_id": thread_id,
         }
 
         if existing_state and existing_state.next:
-            print(f"[*] Resuming interrupted LangGraph thread '{lg_thread_id}' (next step: {existing_state.next})....")
+            print(f"[*] Resuming interrupted LangGraph thread '{thread_id}' (next step: {existing_state.next})....")
             result = graph.invoke(None, config=run_config)
         else:
             result = graph.invoke(initial_state, config=run_config)

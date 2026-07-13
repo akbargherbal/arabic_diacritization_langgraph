@@ -6,7 +6,9 @@ This document details the mechanics of the orchestrator loop, the responsibiliti
 
 ## 1. Orchestrator Control Loop
 
-The main pipeline loop coordinates execution using a rigid state machine built on the DeepAgents framework:
+The main pipeline loop coordinates execution using a rigid LangGraph state
+machine. Its graph edges, rather than an LLM orchestration prompt, enforce
+the draft → verify → route correction cycle.
 
 1.  **Batch Ingestion**: Reads normalized verses from `dataset/inputs/` and groups them by target poetic meter to maximize prompt coherence.
 2.  **Correction passes (Up to 3 passes)**:

@@ -263,7 +263,14 @@ class TokenTracingCallback(BaseCallbackHandler):
 
     # -- attribution ------------------------------------------------------
 
-    def _resolve_agent(self, run_id: str, tags: Optional[list]) -> str:
+    def _resolve_agent(
+        self, run_id: str, tags: Optional[list], metadata: Optional[dict] = None
+    ) -> str:
+        node = (metadata or {}).get("langgraph_node")
+        if node == "dispatch_diacritizer":
+            return "diacritizer"
+        if node == "advisory_stage":
+            return "advisory"
         for t in tags or []:
             if isinstance(t, str) and t.startswith("agent:"):
                 return t[len("agent:") :]
@@ -324,7 +331,7 @@ class TokenTracingCallback(BaseCallbackHandler):
         metadata=None,
         **kwargs,
     ) -> None:
-        self._record_llm_start(run_id, parent_run_id, tags, serialized, kwargs)
+        self._record_llm_start(run_id, parent_run_id, tags, metadata, serialized, kwargs)
 
     def on_chat_model_start(
         self,
@@ -337,17 +344,17 @@ class TokenTracingCallback(BaseCallbackHandler):
         metadata=None,
         **kwargs,
     ) -> None:
-        self._record_llm_start(run_id, parent_run_id, tags, serialized, kwargs)
+        self._record_llm_start(run_id, parent_run_id, tags, metadata, serialized, kwargs)
 
     def _record_llm_start(
-        self, run_id, parent_run_id, tags, serialized, kwargs
+        self, run_id, parent_run_id, tags, metadata, serialized, kwargs
     ) -> None:
         rid, pid = str(run_id), str(parent_run_id) if parent_run_id else None
         self._parent_of[rid] = pid
         self._starts[rid] = {
             "t0": time.monotonic(),
             "started_at": _utcnow_iso(),
-            "agent": self._resolve_agent(rid, tags),
+            "agent": self._resolve_agent(rid, tags, metadata),
             "model": self._resolve_model(serialized, kwargs.get("invocation_params")),
             "parent_run_id": pid,
         }
@@ -472,7 +479,7 @@ class TokenTracingCallback(BaseCallbackHandler):
         tool_name = (serialized or {}).get("name", "")
 
         agent_for_this_call = self._resolve_agent(
-            rid, tags
+            rid, tags, metadata
         )  # who *dispatched* this tool
         if tool_name == DISPATCH_TOOL_NAME:
             subagent = self._extract_subagent_type(input_str, kwargs)

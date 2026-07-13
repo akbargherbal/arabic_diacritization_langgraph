@@ -1,6 +1,8 @@
 # Configuration, Security & Checkpointing
 
-This document details the configuration parameters of the multi-provider model loader, the security and sandboxing permission schema of the DeepAgents composite filesystem, and the local checkpointer database.
+This document details the configuration parameters of the multi-provider model
+loader and the local LangGraph checkpointer database. File access is now
+implemented by narrowly scoped graph helpers rather than an agent filesystem.
 
 ---
 

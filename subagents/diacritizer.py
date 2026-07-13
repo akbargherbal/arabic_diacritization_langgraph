@@ -25,10 +25,6 @@ section needs to be regenerated from skills/meter-fitting/SKILL.md by hand;
 it is not read live.
 """
 
-from langchain.agents import create_agent
-from deepagents.middleware.filesystem import FilesystemMiddleware, FilesystemState
-from tools.prosody_tools import meter_schema_tool
-
 DIACRITIZER_SYSTEM_PROMPT = """
 You diacritize (تشكيل) Arabic verses to fit a target prosodic meter.
 
@@ -164,45 +160,3 @@ resolve to the same meter) are resolved automatically by meter_schema_tool
 — pass whatever spelling you were given, you do not need to normalize it
 yourself.
 """
-
-
-def build_diacritizer_subagent(model, backend):
-    """Compile the diacritizer as an isolated agent with exactly the tool
-    surface it's supposed to have -- no TodoListMiddleware, no injected
-    ls/glob/grep/write_file/edit_file, bound to the SAME backend as the
-    orchestrator so report_path reads actually resolve.
-
-    Must be called with the real `model` and `BACKEND` main.py already
-    constructs -- a `FilesystemMiddleware()` built with no backend= (the
-    prior bug) defaults to an ephemeral, ungrouped StateBackend and would
-    never see the report_path files the orchestrator writes.
-    """
-    read_file = next(
-        t for t in FilesystemMiddleware(backend=backend).tools
-        if t.name == "read_file"
-    )
-    compiled = create_agent(
-        model=model,
-        tools=[meter_schema_tool, read_file],
-        system_prompt=DIACRITIZER_SYSTEM_PROMPT,
-        # REQUIRED: read_file's StateBackend implementation
-        # (deepagents/backends/state.py's _read_files()) reads the graph's
-        # "files" channel directly off the currently-executing graph
-        # (channels["files"].get()), regardless of what's in the input
-        # state dict. A plain create_agent() call registers no "files"
-        # channel at all, so the moment read_file actually runs here, that
-        # lookup raises KeyError: 'files' -- confirmed by reproducing this
-        # exact call against the installed deepagents==0.6.12 source.
-        # FilesystemState declares that channel; passing it here is what
-        # the framework's default subagent middleware stack used to give
-        # diacritizer for free before the CompiledSubAgent fix removed it.
-        state_schema=FilesystemState,
-    )
-    return {
-        "name": "diacritizer",
-        "description": (
-            "Diacritizes or repairs Arabic verses against a target meter. "
-            "Never touches verses marked locked. No access to verification tools."
-        ),
-        "runnable": compiled,
-    }

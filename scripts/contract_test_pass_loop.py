@@ -17,7 +17,7 @@ import langgraph_pipeline as lp
 CALL_LOG = []  # list of ("dispatch", pass_number, [verse_ids]) / ("verify", pass_number)
 
 
-def fake_diacritize_one_verse(model, verse, report_path, pass_number):
+def fake_diacritize_one_verse(model, verse, meter_name, report_path, pass_number, config=None):
     CALL_LOG.append(("dispatch_verse", pass_number, verse["verse_id"]))
     return {"sadr": f"DIACRITIZED[{verse['sadr']}]", "ajuz": f"DIACRITIZED[{verse.get('ajuz', '')}]"}
 

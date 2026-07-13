@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "batch_diacritization": "langgraph_pipeline:build_studio_graph"
+  },
+  "env": ".env"
+}
