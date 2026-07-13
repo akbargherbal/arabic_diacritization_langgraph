@@ -1,0 +1,7 @@
+deepagents>=0.1.0
+langchain>=0.3.0
+langgraph>=0.2.0
+langgraph-checkpoint-sqlite>=3.0.1
+langchain-openai>=0.2.0
+pyarud
+pytest>=8.0.0

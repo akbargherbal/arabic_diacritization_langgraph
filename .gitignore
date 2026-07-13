@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+dataset/verses.jsonl
+logs/disagreements/*.json
+!logs/disagreements/.gitkeep
+workspace/*
+!workspace/.gitkeep
+.env
+.db
+traces.sqlite*
