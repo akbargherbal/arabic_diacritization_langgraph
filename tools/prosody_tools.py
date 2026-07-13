@@ -17,6 +17,7 @@ from pathlib import Path
 from verification import arabic_prosody_feedback as prosody
 from config import meter_tables
 from tools.tracing import current_trace
+from runtime import MAX_CORRECTION_PASSES
 
 
 def meter_schema_tool(meter_id: str) -> dict:
@@ -93,6 +94,12 @@ def verify_batch_tool(verses: list[dict], meter_name: str, pass_number: int) -> 
                 elif verse_result.ajuz.missing_foot_count > 0 or verse_result.ajuz.extra_bits is not None:
                     is_incompatible = True
                     
+            # Near-miss exception: if this is an early pass (pass_number < MAX_CORRECTION_PASSES)
+            # and the combined_score is reasonably high (>= 0.80), we classify it as broken (retryable)
+            # rather than structurally_incompatible to let the diacritizer attempt to tune the diacritics.
+            if is_incompatible and pass_number < MAX_CORRECTION_PASSES and verse_result.combined_score >= 0.80:
+                is_incompatible = False
+
             if is_incompatible:
                 structurally_incompatible.append(v["verse_id"])
             else:

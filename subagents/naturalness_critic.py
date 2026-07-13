@@ -120,7 +120,8 @@ would break the meter. If it would, that is the strongest signal this check
 exists to catch -- stronger than a general "sounds a bit off" -- and you
 should flag it explicitly, naming the alternative reading you considered.
 
-You are advisory only. Return EXACTLY a JSON array of objects with this shape:
+You are advisory only. Return EXACTLY a JSON array of objects with this shape wrapped in a markdown code block:
+```json
 [
   {
     "verse_id": "...",
@@ -129,7 +130,8 @@ You are advisory only. Return EXACTLY a JSON array of objects with this shape:
   },
   ...
 ]
-Do not output any conversational filler or Markdown wrapping around the JSON, just the JSON array.
+```
+Do not output any conversational filler or text outside the code block. Start directly with the code block, and close it immediately after the array.
 
 Be specific in your note about WHAT reads as unnatural if you flag one --
 "feels off" is not useful, "the elongation on X requires reading it as Y

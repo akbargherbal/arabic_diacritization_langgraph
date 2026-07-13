@@ -1330,45 +1330,6 @@ def generate_poem_correction_report(
         schema_shown = True
         out.append("")
 
-    # ── Consolidated "what to fix" list ─────────────────────────────────────
-    out.append("╔" + "═" * 66 + "╗")
-    out.append("║  CONSOLIDATED FIX LIST")
-    out.append("╚" + "═" * 66 + "╝")
-    item = 1
-    for v in poem.verses:
-        if v.combined_score >= score_threshold:
-            continue
-        for h, label in [(v.sadr, "Ṣadr"), (v.ajuz, "ʿAjuz")]:
-            if h is None:
-                continue
-            for f in h.feet:
-                if f.status == "ok":
-                    continue
-                if f.status == "missing":
-                    out.append(
-                        f"  {item}. Verse {v.verse_index + 1} [{label}, Foot {f.foot_index + 1}]  "
-                        f"ADD text for missing foot «{f.expected_pattern}»."
-                    )
-                elif f.status == "extra_bits":
-                    out.append(
-                        f"  {item}. Verse {v.verse_index + 1} [{label}]  "
-                        f"REMOVE extra «{f.actual_segment}»."
-                    )
-                else:
-                    info = _mora_diff(f.expected_pattern, f.actual_segment)
-                    d = info["len_diff"]
-                    verb = (
-                        f"ADD {d} mora(s) to"
-                        if d > 0
-                        else f"TRIM {abs(d)} mora(s) from" if d < 0 else "REWEIGHT"
-                    )
-                    out.append(
-                        f"  {item}. Verse {v.verse_index + 1} [{label}, Foot {f.foot_index + 1} "
-                        f"({f.position_label})]  {verb}  «{f.actual_segment}»"
-                        f"  →  «{f.expected_pattern}»."
-                    )
-                item += 1
-    out.append("")
     return "\n".join(out)
 
 

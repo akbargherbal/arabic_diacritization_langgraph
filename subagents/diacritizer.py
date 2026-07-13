@@ -84,9 +84,9 @@ naming exactly what's still wrong on the next pass if needed. Producing
 that scansion trace in your response wastes the turn — don't show it;
 the response is the diacritized answer only.
 
-Output: return ONLY a JSON array, same order as the input, one object per
-verse:
+Output: return the diacritized verses as a valid JSON array wrapped in a markdown code block:
+```json
 [{"verse_id": "...", "sadr": "...", "ajuz": "..."}, ...]
-No conversational filler, no explanation, and no Markdown code-fence
-wrapping (no ```json) — just the JSON array itself.
+```
+Do not include any conversational filler, explanations, or text outside the code block. Start directly with the code block, and close it immediately after the array.
 """

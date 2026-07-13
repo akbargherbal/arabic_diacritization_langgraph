@@ -151,6 +151,13 @@ class BatchState(TypedDict, total=False):
 # ===========================================================================
 
 
+def _cleanup_json_text(text: str) -> str:
+    text = text.strip()
+    # Remove trailing commas before closing braces/brackets
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+    return text
+
+
 def _extract_json(text: str) -> Any:
     """Parse a model's JSON output, tolerating deviations from the "return
     ONLY a JSON array" instruction that models sometimes make anyway:
@@ -158,38 +165,55 @@ def _extract_json(text: str) -> Any:
     around the fenced or unfenced JSON (e.g. "Here is the diacritized
     output ...\n\n```json\n[...]\n```").
 
-    Session 2 (live-run checkpoint) finding: the prior version's fence
-    regex was anchored with ^...$, so it only matched when the ENTIRE
-    stripped string was nothing but a fenced block. A real batch response
-    that opened with a sentence before the fence fell through untouched
-    and hit json.loads() on text starting with "Here is...", raising
-    "Expecting value: line 1 column 1 (char 0)" despite the JSON itself
-    being well-formed. Confirmed against a real deepseek-v4-flash batch
-    response (finish_reason="stop", not a truncation) before this fix.
+    Tolerates leading conversational text that contains bracket/brace
+    characters by scanning all candidates and picking the largest valid JSON structure.
+    Also handles trailing commas cleanly.
     """
     stripped = text.strip()
 
-    # Prefer JSON found inside a fenced code block, wherever it appears
-    # (not just at the very start of the string).
-    fence = re.search(r"```(?:json)?\s*(.*?)\s*```", stripped, re.DOTALL)
-    if fence:
-        try:
-            return json.loads(fence.group(1).strip())
-        except json.JSONDecodeError:
-            pass  # fenced content wasn't valid on its own -- fall through
+    # 1. Try to find fenced code blocks first
+    for pattern in (r"```json\s*(.*?)\s*```", r"```\s*(.*?)\s*```"):
+        for match in re.finditer(pattern, stripped, re.DOTALL):
+            block = match.group(1).strip()
+            try:
+                return json.loads(block)
+            except json.JSONDecodeError:
+                pass
+            cleaned = _cleanup_json_text(block)
+            try:
+                return json.loads(cleaned)
+            except json.JSONDecodeError:
+                pass
 
-    # No usable fence: locate the first top-level JSON array/object by
-    # bracket position and parse just that span, ignoring any
-    # conversational text before/after it.
-    starts = [i for i in (stripped.find("["), stripped.find("{")) if i != -1]
-    if not starts:
-        raise json.JSONDecodeError("No JSON array/object found in model output", stripped, 0)
-    start = min(starts)
-    end_char = "]" if stripped[start] == "[" else "}"
-    end = stripped.rfind(end_char)
-    if end == -1 or end < start:
-        raise json.JSONDecodeError("Unterminated JSON structure in model output", stripped, start)
-    return json.loads(stripped[start : end + 1])
+    # 2. No clean fenced block worked. Let's find any JSON structure (object or array)
+    # by scanning all potential starting brackets/braces and finding the largest valid span.
+    for i, char in enumerate(stripped):
+        if char in ("{", "["):
+            target_char = "}" if char == "{" else "]"
+            # Search from the end of the text backwards for the matching character
+            # to prioritize larger spans
+            for j in range(len(stripped) - 1, i, -1):
+                if stripped[j] == target_char:
+                    candidate = stripped[i : j + 1]
+                    try:
+                        parsed = json.loads(candidate)
+                        if isinstance(parsed, (dict, list)):
+                            return parsed
+                    except json.JSONDecodeError:
+                        try:
+                            cleaned = _cleanup_json_text(candidate)
+                            parsed = json.loads(cleaned)
+                            if isinstance(parsed, (dict, list)):
+                                return parsed
+                        except json.JSONDecodeError:
+                            pass
+
+    # 3. If everything failed, raise a helpful JSONDecodeError
+    raise json.JSONDecodeError(
+        "Could not find or decode any valid JSON array/object in model output",
+        stripped,
+        0
+    )
 
 
 @tool
@@ -293,14 +317,30 @@ def _diacritize_batch(
         messages.append(ai_msg)
         tool_calls = getattr(ai_msg, "tool_calls", None) or []
         if not tool_calls:
-            parsed = _extract_json(ai_msg.content)
-            drafts: dict = {}
-            for item in parsed:
-                drafts[item["verse_id"]] = {
-                    "sadr": item["sadr"],
-                    "ajuz": item.get("ajuz", ""),
-                }
-            return drafts
+            raw_text = ai_msg.content
+            try:
+                parsed = _extract_json(raw_text)
+                if not isinstance(parsed, list):
+                    raise ValueError("Parsed JSON is not a list")
+
+                # Heuristic salvage: align IDs and fill missing items deterministically
+                from subagents.formatter import heuristic_salvage
+                salvaged = heuristic_salvage(parsed, targets)
+                if salvaged is not None:
+                    return salvaged
+
+                drafts: dict = {}
+                for item in parsed:
+                    drafts[item["verse_id"]] = {
+                        "sadr": item["sadr"],
+                        "ajuz": item.get("ajuz", ""),
+                    }
+                return drafts
+            except Exception as err:
+                from subagents.formatter import call_salvage_agent
+                error_info = f"{type(err).__name__}: {str(err)}"
+                print(f"[*] Diacritizer output formatting check failed ({error_info}). Invoking Formatter/Salvage agent...")
+                return call_salvage_agent(model, raw_text, targets, error_info)
         for tc in tool_calls:
             if tc["name"] == "meter_schema_tool":
                 result = meter_schema_tool(**tc["args"])
