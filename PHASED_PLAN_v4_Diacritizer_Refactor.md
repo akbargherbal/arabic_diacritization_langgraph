@@ -121,12 +121,24 @@ framework is this."
   no truncated/malformed batch responses at the new token budget. Human
   judges whether output quality holds.
 
-### Phase 2 — Simplify the verify → correct loop `[ ]`
+### Phase 2 — Simplify the verify → correct loop `[~]`
 - Confirm `verify_batch_tool`'s correction_report still gives the (now
   batch-mode) diacritizer enough signal per broken verse without
   over-specifying mechanics.
 - Keep the 3-pass cap and lock-on-pass behavior unchanged (`AGENTS.md` rules
   2/5 are correct as written) — this phase is about trimming, not replacing.
+- **Session 2 finding (not yet acted on):** `generate_poem_correction_report`
+  duplicates every fix prescription verbatim — once inline per-verse under
+  "CORRECTION PRESCRIPTION", again in the poem-level "CONSOLIDATED FIX LIST"
+  at the end — and renders box-drawing expected/actual grids that repeat
+  what's already stated in plain prose in "DETAILED DIAGNOSIS". Measured on
+  a real 3-verse worst-case batch (`3VERSES_1919_batch_00.jsonl`, fully
+  undiacritized input): report was 14,291 chars (~3.6k tokens). Candidate
+  trim: drop the CONSOLIDATED FIX LIST section (redundant with per-verse
+  prescriptions) and/or the box-drawing grids (redundant with DETAILED
+  DIAGNOSIS prose). Not implemented — needs a live before/after comparison
+  to confirm no signal loss, and Phase 1's own live baseline isn't
+  confirmed yet either (see Known Issues).
 - **Checkpoint**: `tests/test_alignment_guards.py`, `test_prosody_tools.py`,
   `test_advisory_ledger.py` still pass; no regression in unresolved-verse rate
   across a fixed sample of 5 batches vs. the Phase 1 baseline.
@@ -198,3 +210,10 @@ that session's `Session_N_Handover.md`.)*
 
 - Session 1: Repo inspected, objections mapped to code, this plan written and
   approved. Phase 0 and Phase 1 executed and checkpointed.
+- Session 2: No live model access available (no API key, restricted network
+  egress) — Phase 1's live-run checkpoint still open. Re-verified Phase 0/1
+  via fresh clone (grep + pytest + all 3 contract scripts, all pass, no
+  drift). Did non-live Phase 2 prep: read `verify_batch_tool` +
+  `generate_poem_correction_report`, ran it against a real batch via pyarud
+  (deterministic, no LLM needed), found real duplication/verbosity in the
+  report (see Phase 2 notes above). No code changed this session.
