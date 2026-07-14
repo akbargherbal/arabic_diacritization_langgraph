@@ -18,7 +18,7 @@ from typing import Any
 def _cleanup_json_text(text: str) -> str:
     text = text.strip()
     # Remove trailing commas before closing braces/brackets
-    text = re.sub(r",\s*([}\\]])", r"\1", text)
+    text = re.sub(r",\s*([}\]])", r"\1", text)
     return text
 
 

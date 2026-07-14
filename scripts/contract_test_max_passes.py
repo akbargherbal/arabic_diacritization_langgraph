@@ -102,6 +102,8 @@ def main():
     ), patch.object(
         verify_stage, "log_unresolved_tool", side_effect=fake_log_unresolved
     ), patch.object(
+        advisory_stage, "log_unresolved_tool", side_effect=fake_log_unresolved
+    ), patch.object(
         advisory_stage,
         "build_batched_advisory_payload_tool",
         return_value={"payload": None},

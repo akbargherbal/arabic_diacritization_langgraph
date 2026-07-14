@@ -93,7 +93,7 @@ def _diacritize_batch(
             f"first attempt -- no prior correction report).\n\n"
             f"Input verses (JSON array, {len(targets)} verse(s)):\n{verses_payload}\n\n"
             f"Return a JSON array, same order, one object per verse_id: "
-            f'[{"verse_id": "...", "sadr": "...", "ajuz": "..."}}, ...] '
+            f'[{{"verse_id": "...", "sadr": "...", "ajuz": "..."}}, ...] '
             f"-- diacritized text only, no commentary, no markdown fences."
         )
     else:
@@ -107,7 +107,7 @@ def _diacritize_batch(
             f"report_path: {report_path}\n\n"
             f"Input verses (JSON array, {len(targets)} verse(s)):\n{verses_payload}\n\n"
             f"Return a JSON array, same order, one object per verse_id: "
-            f'[{"verse_id": "...", "sadr": "...", "ajuz": "..."}}, ...] '
+            f'[{{"verse_id": "...", "sadr": "...", "ajuz": "..."}}, ...] '
             f"-- no commentary, no markdown fences."
         )
 
