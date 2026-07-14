@@ -55,7 +55,11 @@ from langchain_core.tools import tool
 from langgraph.graph import END, StateGraph
 
 from backends.model_provider import get_model
-from tools.prosody_tools import verify_batch_tool, verify_single_verse_tool, meter_schema_tool
+from tools.prosody_tools import (
+    verify_batch_tool,
+    verify_single_verse_tool,
+    meter_schema_tool,
+)
 from tools.dataset_tools import commit_verse_tool, log_unresolved_tool
 from tools.reconciliation_tools import reconcile_case_ending_tool
 from tools.advisory_ledger import record_locked_verse_tool, read_ledger_tool
@@ -212,7 +216,7 @@ def _extract_json(text: str) -> Any:
     raise json.JSONDecodeError(
         "Could not find or decode any valid JSON array/object in model output",
         stripped,
-        0
+        0,
     )
 
 
@@ -308,7 +312,10 @@ def _diacritize_batch(
             f"-- no commentary, no markdown fences."
         )
 
-    messages = [SystemMessage(content=DIACRITIZER_SYSTEM_PROMPT), HumanMessage(content=user_content)]
+    messages = [
+        SystemMessage(content=DIACRITIZER_SYSTEM_PROMPT),
+        HumanMessage(content=user_content),
+    ]
 
     # Bounded tool-calling loop -- same pattern as before; capped defensively
     # so a misbehaving model can't loop forever inside one dispatch.
@@ -325,6 +332,7 @@ def _diacritize_batch(
 
                 # Heuristic salvage: align IDs and fill missing items deterministically
                 from subagents.formatter import heuristic_salvage
+
                 salvaged = heuristic_salvage(parsed, targets)
                 if salvaged is not None:
                     return salvaged
@@ -338,8 +346,11 @@ def _diacritize_batch(
                 return drafts
             except Exception as err:
                 from subagents.formatter import call_salvage_agent
+
                 error_info = f"{type(err).__name__}: {str(err)}"
-                print(f"[*] Diacritizer output formatting check failed ({error_info}). Invoking Formatter/Salvage agent...")
+                print(
+                    f"[*] Diacritizer output formatting check failed ({error_info}). Invoking Formatter/Salvage agent..."
+                )
                 return call_salvage_agent(model, raw_text, targets, error_info)
         for tc in tool_calls:
             if tc["name"] == "meter_schema_tool":
@@ -348,7 +359,12 @@ def _diacritize_batch(
                 result = read_workspace_file.invoke(tc["args"])
             else:
                 result = f"ERROR: unknown tool {tc['name']}"
-            messages.append(ToolMessage(content=json.dumps(result, ensure_ascii=False), tool_call_id=tc["id"]))
+            messages.append(
+                ToolMessage(
+                    content=json.dumps(result, ensure_ascii=False),
+                    tool_call_id=tc["id"],
+                )
+            )
 
     raise RuntimeError(
         f"diacritizer tool-loop did not converge for a batch of {len(targets)} "
@@ -427,13 +443,21 @@ def verify_pass(state: BatchState) -> dict:
         if vid in prior_incompatible:
             continue
         draft = drafts.get(vid)
-        text = {"verse_id": vid, "sadr": draft["sadr"], "ajuz": draft.get("ajuz", "")} if draft else v
+        text = (
+            {"verse_id": vid, "sadr": draft["sadr"], "ajuz": draft.get("ajuz", "")}
+            if draft
+            else v
+        )
         verses_to_verify.append(text)
 
     result = verify_batch_tool(verses_to_verify, state["meter_name"], pass_number)
 
     newly_locked = [vid for vid in result["locked"] if vid not in prior_locked]
-    newly_incompatible = [vid for vid in result["structurally_incompatible"] if vid not in prior_incompatible]
+    newly_incompatible = [
+        vid
+        for vid in result["structurally_incompatible"]
+        if vid not in prior_incompatible
+    ]
 
     report_text = None
     rp = result.get("report_path")
@@ -443,7 +467,9 @@ def verify_pass(state: BatchState) -> dict:
             report_text = p.read_text(encoding="utf-8")
 
     for vid in newly_locked:
-        draft = drafts.get(vid) or next(v for v in state["verses"] if v["verse_id"] == vid)
+        draft = drafts.get(vid) or next(
+            v for v in state["verses"] if v["verse_id"] == vid
+        )
         record_locked_verse_tool(
             verse_id=vid,
             sadr=draft["sadr"],
@@ -452,7 +478,9 @@ def verify_pass(state: BatchState) -> dict:
         )
 
     for vid in newly_incompatible:
-        draft = drafts.get(vid) or next(v for v in state["verses"] if v["verse_id"] == vid)
+        draft = drafts.get(vid) or next(
+            v for v in state["verses"] if v["verse_id"] == vid
+        )
         log_unresolved_tool(
             verse_id=vid,
             sadr=draft["sadr"],
@@ -493,33 +521,52 @@ def route_after_verify(state: BatchState) -> str:
 # ===========================================================================
 
 
-def _call_advisory_model(model, system_prompt: str, user_payload: str) -> Any:
-    ai_msg = model.invoke([SystemMessage(content=system_prompt), HumanMessage(content=user_payload)])
+def _call_advisory_model(
+    model, system_prompt: str, user_payload: str, agent_tag: str
+) -> Any:
+    ai_msg = model.invoke(
+        [SystemMessage(content=system_prompt), HumanMessage(content=user_payload)],
+        config={"tags": [f"agent:{agent_tag}"]},
+    )
     return _extract_json(ai_msg.content)
 
 
 def run_irab_checker_batch(model, payload_json: str) -> list[dict]:
-    return _call_advisory_model(model, IRAB_BATCH_SYSTEM_PROMPT, payload_json)
+    return _call_advisory_model(
+        model, IRAB_BATCH_SYSTEM_PROMPT, payload_json, "irab_checker_batch"
+    )
 
 
 def run_naturalness_critic_batch(model, payload_json: str) -> list[dict]:
-    return _call_advisory_model(model, NATURALNESS_BATCH_SYSTEM_PROMPT, payload_json)
+    return _call_advisory_model(
+        model, NATURALNESS_BATCH_SYSTEM_PROMPT, payload_json, "naturalness_critic_batch"
+    )
 
 
 def run_irab_checker_single(model, verse: dict) -> dict:
     payload = json.dumps(
-        {"verse_id": verse["verse_id"], "sadr": verse["sadr"], "ajuz": verse.get("ajuz", "")},
+        {
+            "verse_id": verse["verse_id"],
+            "sadr": verse["sadr"],
+            "ajuz": verse.get("ajuz", ""),
+        },
         ensure_ascii=False,
     )
-    return _call_advisory_model(model, IRAB_SYSTEM_PROMPT, payload)
+    return _call_advisory_model(model, IRAB_SYSTEM_PROMPT, payload, "irab_checker")
 
 
 def run_naturalness_critic_single(model, verse: dict) -> dict:
     payload = json.dumps(
-        {"verse_id": verse["verse_id"], "sadr": verse["sadr"], "ajuz": verse.get("ajuz", "")},
+        {
+            "verse_id": verse["verse_id"],
+            "sadr": verse["sadr"],
+            "ajuz": verse.get("ajuz", ""),
+        },
         ensure_ascii=False,
     )
-    return _call_advisory_model(model, NATURALNESS_SYSTEM_PROMPT, payload)
+    return _call_advisory_model(
+        model, NATURALNESS_SYSTEM_PROMPT, payload, "naturalness_critic"
+    )
 
 
 # ===========================================================================
@@ -570,7 +617,9 @@ def resolve_and_commit(
                     original_sadr=sadr,
                     original_ajuz=ajuz,
                     naturalness_flag=naturalness_flag,
-                    notes=naturalness_verdict.get("note", "") if naturalness_flag else "",
+                    notes=(
+                        naturalness_verdict.get("note", "") if naturalness_flag else ""
+                    ),
                 )
             # Reconciled text failed pyarud -- fall through to precedence
             # rule below using the ORIGINAL (pre-swap) text.
@@ -639,7 +688,9 @@ def make_advisory_stage(model):
                 report_text = p.read_text(encoding="utf-8")
 
         for vid in broken_ids:
-            draft = drafts.get(vid) or next(v for v in state["verses"] if v["verse_id"] == vid)
+            draft = drafts.get(vid) or next(
+                v for v in state["verses"] if v["verse_id"] == vid
+            )
             log_unresolved_tool(
                 verse_id=vid,
                 sadr=draft["sadr"],
@@ -683,9 +734,13 @@ def make_advisory_stage(model):
             # Step 6: fall back to per-verse single dispatch for EVERY verse
             # in this batch, and log which guard failed and why.
             if not irab_ok:
-                print(f"[!] irab_checker_batch alignment guard failed: {irab_reason} -- falling back to per-verse dispatch.")
+                print(
+                    f"[!] irab_checker_batch alignment guard failed: {irab_reason} -- falling back to per-verse dispatch."
+                )
             if not nat_ok:
-                print(f"[!] naturalness_critic_batch alignment guard failed: {nat_reason} -- falling back to per-verse dispatch.")
+                print(
+                    f"[!] naturalness_critic_batch alignment guard failed: {nat_reason} -- falling back to per-verse dispatch."
+                )
             for lv in ledger_verses:
                 irab_by_id[lv["verse_id"]] = run_irab_checker_single(model, lv)
                 nat_by_id[lv["verse_id"]] = run_naturalness_critic_single(model, lv)
@@ -728,7 +783,10 @@ def build_graph(diacritizer_model, advisory_model, checkpointer=None):
     graph.add_conditional_edges(
         "verify_pass",
         route_after_verify,
-        {"dispatch_diacritizer": "dispatch_diacritizer", "advisory_stage": "advisory_stage"},
+        {
+            "dispatch_diacritizer": "dispatch_diacritizer",
+            "advisory_stage": "advisory_stage",
+        },
     )
     graph.add_edge("advisory_stage", END)
 
@@ -756,7 +814,9 @@ def build_langgraph_pipeline(use_checkpointer: bool = True):
 
     if use_checkpointer:
         checkpoint_db_path = PROJECT_ROOT / "checkpoints.sqlite"
-        checkpoint_conn = sqlite3.connect(str(checkpoint_db_path), check_same_thread=False)
+        checkpoint_conn = sqlite3.connect(
+            str(checkpoint_db_path), check_same_thread=False
+        )
         checkpoint_conn.execute("PRAGMA busy_timeout = 30000")
         checkpoint_conn.execute("PRAGMA synchronous = NORMAL")
         try:
@@ -764,7 +824,9 @@ def build_langgraph_pipeline(use_checkpointer: bool = True):
             cursor.execute("PRAGMA integrity_check")
             integrity_result = cursor.fetchone()[0]
             if integrity_result != "ok":
-                print(f"[!] Warning: Checkpoint database corrupted. PRAGMA integrity_check returned: {integrity_result}")
+                print(
+                    f"[!] Warning: Checkpoint database corrupted. PRAGMA integrity_check returned: {integrity_result}"
+                )
         except Exception as exc:
             print(f"[-] Pre-run checkpoint diagnostic failed: {exc}")
         checkpointer = SqliteSaver(checkpoint_conn)
@@ -793,7 +855,9 @@ def run_one_batch(graph, verses_batch: list[dict], meter: str, thread_id: str) -
             "configurable": {"thread_id": thread_id},
             "callbacks": [trace.callback],
         }
-        print(f"[*] trace_id='{trace.trace_id}' (inspect with: python -m tools.trace_report --trace {trace.trace_id})")
+        print(
+            f"[*] trace_id='{trace.trace_id}' (inspect with: python -m tools.trace_report --trace {trace.trace_id})"
+        )
 
         try:
             existing_state = graph.get_state(run_config)
@@ -813,10 +877,14 @@ def run_one_batch(graph, verses_batch: list[dict], meter: str, thread_id: str) -
         }
 
         if existing_state and existing_state.next:
-            print(f"[*] Resuming interrupted LangGraph thread '{thread_id}' (next step: {existing_state.next})....")
+            print(
+                f"[*] Resuming interrupted LangGraph thread '{thread_id}' (next step: {existing_state.next})...."
+            )
             result = graph.invoke(None, config=run_config)
         else:
             result = graph.invoke(initial_state, config=run_config)
 
-        print(f"[*] trace summary: python -m tools.trace_report --trace {trace.trace_id}")
+        print(
+            f"[*] trace summary: python -m tools.trace_report --trace {trace.trace_id}"
+        )
         return result

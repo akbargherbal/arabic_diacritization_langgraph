@@ -262,19 +262,19 @@ class TokenTracingCallback(BaseCallbackHandler):
         )  # run_id -> subagent name, set on `task` tool start
 
     # -- attribution ------------------------------------------------------
-
     def _resolve_agent(
         self, run_id: str, tags: Optional[list], metadata: Optional[dict] = None
     ) -> str:
+        for t in tags or []:
+            if isinstance(t, str) and t.startswith("agent:"):
+                return t[len("agent:") :]
         node = (metadata or {}).get("langgraph_node")
         if node == "dispatch_diacritizer":
             return "diacritizer"
         if node == "advisory_stage":
             return "advisory"
-        for t in tags or []:
-            if isinstance(t, str) and t.startswith("agent:"):
-                return t[len("agent:") :]
         cursor = self._parent_of.get(run_id)
+
         seen = set()
         while cursor and cursor not in seen:
             seen.add(cursor)
@@ -331,7 +331,9 @@ class TokenTracingCallback(BaseCallbackHandler):
         metadata=None,
         **kwargs,
     ) -> None:
-        self._record_llm_start(run_id, parent_run_id, tags, metadata, serialized, kwargs)
+        self._record_llm_start(
+            run_id, parent_run_id, tags, metadata, serialized, kwargs
+        )
 
     def on_chat_model_start(
         self,
@@ -344,7 +346,9 @@ class TokenTracingCallback(BaseCallbackHandler):
         metadata=None,
         **kwargs,
     ) -> None:
-        self._record_llm_start(run_id, parent_run_id, tags, metadata, serialized, kwargs)
+        self._record_llm_start(
+            run_id, parent_run_id, tags, metadata, serialized, kwargs
+        )
 
     def _record_llm_start(
         self, run_id, parent_run_id, tags, metadata, serialized, kwargs
