@@ -14,6 +14,7 @@ code, but with mock boundaries so no live dataset/verses.jsonl writes occur.
 from unittest.mock import MagicMock, patch
 
 import pipeline.advisory_stage as advisory_stage
+from facades.ledger_client import LedgerClient
 from tools.tracing import trace_run
 
 
@@ -33,8 +34,8 @@ def test_scenario_a_clean_batched_path_commits_with_no_flags():
     commit_calls = []
 
     with patch.object(
-        advisory_stage,
-        "commit_verse_tool",
+        LedgerClient,
+        "commit",
         side_effect=_fake_commit_verse_tool(commit_calls),
     ), patch(
         "tools.advisory_ledger.verify_skeleton_fidelity_tool",
@@ -97,8 +98,8 @@ def test_scenario_b_case_ending_swap_reconciles_successfully():
         "verify_single_verse_tool",
         return_value={"is_sound": True, "combined_score": 1.0, "issues": []},
     ), patch.object(
-        advisory_stage,
-        "commit_verse_tool",
+        LedgerClient,
+        "commit",
         side_effect=_fake_commit_verse_tool(commit_calls),
     ):
 
@@ -140,8 +141,8 @@ def test_scenario_c_failed_reconciliation_falls_back_to_pyarud_wins_precedence()
         "verify_single_verse_tool",
         return_value={"is_sound": False, "combined_score": 0.5, "issues": ["broken"]},
     ), patch.object(
-        advisory_stage,
-        "commit_verse_tool",
+        LedgerClient,
+        "commit",
         side_effect=_fake_commit_verse_tool(commit_calls),
     ):
 
@@ -172,8 +173,8 @@ def test_scenario_d_alignment_guard_failure_falls_back_to_per_verse_dispatch():
     commit_calls = []
 
     with patch.object(
-        advisory_stage,
-        "commit_verse_tool",
+        LedgerClient,
+        "commit",
         side_effect=_fake_commit_verse_tool(commit_calls),
     ), patch(
         "tools.advisory_ledger.verify_skeleton_fidelity_tool",

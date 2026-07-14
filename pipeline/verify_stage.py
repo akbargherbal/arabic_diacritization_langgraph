@@ -4,19 +4,23 @@ pipeline/verify_stage.py
 Task 1.3/2.5's verify_pass node and Task 1.4's route_after_verify edge,
 extracted from langgraph_pipeline.py (Phase 2b of docs/REFACTOR_PLAN.md).
 
-Patch `verify_batch_tool`, `record_locked_verse_tool`, and
-`log_unresolved_tool` HERE (`pipeline.verify_stage.<name>`) when testing
-verify_pass -- they're called as bare names resolved via this module's
-globals, not via `langgraph_pipeline`'s re-exported bindings.
+Patch `verify_batch_tool` and `LedgerClient` HERE
+(`pipeline.verify_stage.<name>`) when testing verify_pass -- they're
+called as bare names resolved via this module's globals, not via
+`langgraph_pipeline`'s re-exported bindings.
+
+Phase 4 of PHASED_PLAN.md: recording locked verses and logging unresolved
+ones now goes through the LedgerClient facade (facades/ledger_client.py)
+instead of importing record_locked_verse_tool/log_unresolved_tool directly
+from tools.advisory_ledger/tools.dataset_tools.
 """
 
 from __future__ import annotations
 
 from runtime import MAX_CORRECTION_PASSES, PROJECT_ROOT
-from tools.dataset_tools import log_unresolved_tool
-from tools.advisory_ledger import record_locked_verse_tool
 from tools.prosody_tools import verify_batch_tool
 
+from facades.ledger_client import LedgerClient
 from pipeline.state import BatchState
 
 
@@ -74,7 +78,7 @@ def verify_pass(state: BatchState) -> dict:
         draft = drafts.get(vid) or next(
             v for v in state["verses"] if v["verse_id"] == vid
         )
-        record_locked_verse_tool(
+        LedgerClient.record_locked(
             verse_id=vid,
             sadr=draft["sadr"],
             ajuz=draft.get("ajuz", ""),
@@ -85,7 +89,7 @@ def verify_pass(state: BatchState) -> dict:
         draft = drafts.get(vid) or next(
             v for v in state["verses"] if v["verse_id"] == vid
         )
-        log_unresolved_tool(
+        LedgerClient.log_unresolved(
             verse_id=vid,
             sadr=draft["sadr"],
             ajuz=draft.get("ajuz", ""),

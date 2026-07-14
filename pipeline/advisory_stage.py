@@ -8,11 +8,17 @@ langgraph_pipeline.py (Phase 2b of docs/REFACTOR_PLAN.md).
 Patch names HERE (`pipeline.advisory_stage.<name>`) when testing this
 stage -- `run_irab_checker_batch`, `run_naturalness_critic_batch`,
 `run_irab_checker_single`, `run_naturalness_critic_single`,
-`reconcile_case_ending_tool`, `verify_single_verse_tool`,
-`commit_verse_tool`, `log_unresolved_tool`, and
-`build_batched_advisory_payload_tool` are all called as bare names
-resolved via this module's globals, not via `langgraph_pipeline`'s
-re-exported bindings.
+`reconcile_case_ending_tool`, and `verify_single_verse_tool` are all
+called as bare names resolved via this module's globals, not via
+`langgraph_pipeline`'s re-exported bindings.
+
+Phase 4 of PHASED_PLAN.md: committing verses, logging unresolved ones,
+building the batched advisory payload, and resetting the ledger all go
+through the LedgerClient facade (facades/ledger_client.py) instead of
+importing commit_verse_tool/log_unresolved_tool/read_ledger_tool/
+build_batched_advisory_payload_tool directly. Patch
+`pipeline.advisory_stage.LedgerClient` (e.g.
+`patch.object(LedgerClient, "commit", ...)`) when testing those paths.
 """
 
 from __future__ import annotations
@@ -28,16 +34,14 @@ from subagents.naturalness_critic import (
     NATURALNESS_SYSTEM_PROMPT,
     NATURALNESS_BATCH_SYSTEM_PROMPT,
 )
-from tools.advisory_batch import build_batched_advisory_payload_tool
-from tools.advisory_ledger import read_ledger_tool
 from tools.alignment_guards import (
     validate_advisory_batch_alignment,
     validate_naturalness_batch_alignment,
 )
-from tools.dataset_tools import commit_verse_tool, log_unresolved_tool
 from tools.prosody_tools import verify_single_verse_tool
 from tools.reconciliation_tools import reconcile_case_ending_tool
 
+from facades.ledger_client import LedgerClient
 from pipeline.json_utils import _extract_json
 from pipeline.state import BatchState
 
@@ -133,7 +137,7 @@ def resolve_and_commit(
             verify = verify_single_verse_tool(new_sadr, new_ajuz, meter)
             if verify["is_sound"]:
                 # Resolved grammar fix, no metrical cost -- not a disagreement.
-                return commit_verse_tool(
+                return LedgerClient.commit(
                     verse_id=verse_id,
                     sadr=new_sadr,
                     ajuz=new_ajuz,
@@ -152,7 +156,7 @@ def resolve_and_commit(
 
     if irab_flag:
         # fix_type == "structural", or reconciliation was attempted and failed.
-        return commit_verse_tool(
+        return LedgerClient.commit(
             verse_id=verse_id,
             sadr=sadr,
             ajuz=ajuz,
@@ -166,7 +170,7 @@ def resolve_and_commit(
         )
 
     if naturalness_flag:
-        return commit_verse_tool(
+        return LedgerClient.commit(
             verse_id=verse_id,
             sadr=sadr,
             ajuz=ajuz,
@@ -176,7 +180,7 @@ def resolve_and_commit(
         )
 
     # Clean on both advisory axes.
-    return commit_verse_tool(verse_id=verse_id, sadr=sadr, ajuz=ajuz, meter=meter)
+    return LedgerClient.commit(verse_id=verse_id, sadr=sadr, ajuz=ajuz, meter=meter)
 
 
 # ===========================================================================
@@ -216,7 +220,7 @@ def make_advisory_stage(model):
             draft = drafts.get(vid) or next(
                 v for v in state["verses"] if v["verse_id"] == vid
             )
-            log_unresolved_tool(
+            LedgerClient.log_unresolved(
                 verse_id=vid,
                 sadr=draft["sadr"],
                 ajuz=draft.get("ajuz", ""),
@@ -231,7 +235,7 @@ def make_advisory_stage(model):
 
         # Step 2: once resolved, build the batched advisory payload from
         # everything record_locked_verse_tool wrote during verify_pass.
-        payload_result = build_batched_advisory_payload_tool()
+        payload_result = LedgerClient.build_advisory_payload()
         payload = payload_result.get("payload")
 
         # Step 3
@@ -284,7 +288,7 @@ def make_advisory_stage(model):
             )
 
         # Step 8: reset the ledger for the next input batch.
-        read_ledger_tool(clear=True)
+        LedgerClient.reset_ledger()
 
         return {}
 

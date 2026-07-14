@@ -12,7 +12,7 @@ Run: PYTHONPATH=. python3 scripts/contract_test_advisory_stage.py
 from unittest.mock import MagicMock, patch
 
 import pipeline.advisory_stage as advisory_stage
-import pipeline.verify_stage as verify_stage
+from facades.ledger_client import LedgerClient
 
 COMMIT_CALLS = []
 
@@ -29,7 +29,7 @@ def fake_commit_verse_tool(**kwargs):
 def main():
     # --- Scenario A: batched path, all clean (no flags) ---
     with patch.object(
-        advisory_stage, "commit_verse_tool", side_effect=fake_commit_verse_tool
+        LedgerClient, "commit", side_effect=fake_commit_verse_tool
     ), patch(
         "tools.advisory_ledger.verify_skeleton_fidelity_tool",
         return_value={"match": True},
@@ -55,8 +55,10 @@ def main():
         from tools.tracing import trace_run
 
         with trace_run(langgraph_thread_id="contract_advisory_A"):
-            verify_stage.record_locked_verse_tool("V1", "سدر 1", "عجز 1", "ramal")
-            verify_stage.record_locked_verse_tool("V2", "سدر 2", "عجز 2", "ramal")
+            import tools.advisory_ledger as ledger
+
+            ledger.record_locked_verse_tool("V1", "سدر 1", "عجز 1", "ramal")
+            ledger.record_locked_verse_tool("V2", "سدر 2", "عجز 2", "ramal")
 
             state = {
                 "verses": [
@@ -96,7 +98,7 @@ def main():
         "verify_single_verse_tool",
         return_value={"is_sound": True, "combined_score": 1.0, "issues": []},
     ), patch.object(
-        advisory_stage, "commit_verse_tool", side_effect=fake_commit_verse_tool
+        LedgerClient, "commit", side_effect=fake_commit_verse_tool
     ):
 
         result = advisory_stage.resolve_and_commit(
@@ -137,7 +139,7 @@ def main():
         "verify_single_verse_tool",
         return_value={"is_sound": False, "combined_score": 0.5, "issues": ["broken"]},
     ), patch.object(
-        advisory_stage, "commit_verse_tool", side_effect=fake_commit_verse_tool
+        LedgerClient, "commit", side_effect=fake_commit_verse_tool
     ):
 
         advisory_stage.resolve_and_commit(
@@ -167,7 +169,7 @@ def main():
     # --- Scenario D: alignment guard failure triggers fallback to single-verse dispatch ---
     COMMIT_CALLS.clear()
     with patch.object(
-        advisory_stage, "commit_verse_tool", side_effect=fake_commit_verse_tool
+        LedgerClient, "commit", side_effect=fake_commit_verse_tool
     ), patch(
         "tools.advisory_ledger.verify_skeleton_fidelity_tool",
         return_value={"match": True},
@@ -205,7 +207,9 @@ def main():
         from tools.tracing import trace_run
 
         with trace_run(langgraph_thread_id="contract_advisory_D"):
-            verify_stage.record_locked_verse_tool("V5", "سدر 5", "عجز 5", "ramal")
+            import tools.advisory_ledger as ledger
+
+            ledger.record_locked_verse_tool("V5", "سدر 5", "عجز 5", "ramal")
             state = {
                 "verses": [{"verse_id": "V5", "sadr": "سدر 5", "ajuz": "عجز 5"}],
                 "meter_name": "ramal",

@@ -22,6 +22,7 @@ import pipeline.diacritize_stage as diacritize_stage
 import pipeline.verify_stage as verify_stage
 import pipeline.advisory_stage as advisory_stage
 from pipeline.graph import build_graph
+from facades.ledger_client import LedgerClient
 
 CALL_LOG = []
 UNRESOLVED_LOGS = []
@@ -98,14 +99,12 @@ def main():
     ), patch.object(
         verify_stage, "verify_batch_tool", side_effect=fake_verify_batch_tool
     ), patch.object(
-        verify_stage, "record_locked_verse_tool", return_value={"recorded": True}
+        LedgerClient, "record_locked", return_value={"recorded": True}
     ), patch.object(
-        verify_stage, "log_unresolved_tool", side_effect=fake_log_unresolved
+        LedgerClient, "log_unresolved", side_effect=fake_log_unresolved
     ), patch.object(
-        advisory_stage, "log_unresolved_tool", side_effect=fake_log_unresolved
-    ), patch.object(
-        advisory_stage,
-        "build_batched_advisory_payload_tool",
+        LedgerClient,
+        "build_advisory_payload",
         return_value={"payload": None},
     ):
 
