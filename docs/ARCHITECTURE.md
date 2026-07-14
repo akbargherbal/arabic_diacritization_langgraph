@@ -109,3 +109,47 @@ The system resolves this via a specialized, deterministic loop:
 5.  **Routing**:
     - _If the recheck passes_: The reconciled text is committed with `reconciled=True`. Since the conflict was resolved programmatically, `needs_review` remains `False`.
     - _If the recheck fails_ (due to edge-case converter variations): The system falls back to the original, metrically sound pre-swap text, commits it with `irab_flag=True`, marks `needs_review=True`, and exports a disagreement record to `logs/disagreements/`.
+
+---
+
+## 5. Codebase Module Layout & Packages
+
+Through the refactoring plan (documented in `docs/REFACTOR_PLAN.md`), the codebase was decomposed from a set of massive, low-cohesion monoliths into a clean, modular structure. This layout enforces strict one-way dependency directions and increases module cohesion:
+
+### `pipeline/` Package (Orchestrator Decompositions)
+Handles the LangGraph orchestration, state, and batch processing stages:
+-   `state.py`: Defines `BatchState` and the state reducer functions.
+-   `json_utils.py`: Contains the JSON cleaning and extraction parser tools.
+-   `diacritize_stage.py`: Node implementation for parallel LLM diacritizer dispatch.
+-   `verify_stage.py`: Node implementation for batch metrical verification and correction report generation.
+-   `advisory_stage.py`: Constructs the advisory stage, runs parallel Irab/Naturalness audits, and implements `run_with_batch_fallback`.
+-   `graph.py`: Assembles the `StateGraph` and exposes the build functions.
+-   `runner.py`: Provides `run_one_batch` as the primary local script runner entry point.
+
+### `verification/prosody/` Package (Prosody Decomposition)
+Houses the metrical analysis, pattern comparisons, and correction-report formatting:
+-   `scoring.py`: Contains pure functions for U/_-pattern comparisons, zihaf identification, and foot health scoring. No external dependencies.
+-   `analysis.py`: Contains data models (`FootResult`, `VerseResult`, etc.) and the `pyarud`-driven core analyzer (`analyze_poem`, `analyze_verse`).
+-   `reporting.py`: Implements the text-formatting logic that builds human-readable and LLM-actionable correction reports.
+
+### `facades/` Package (Cross-Cutting Infrastructure)
+Decouples the core pipeline nodes from logging, tracing, and storage systems:
+-   `tracing_context.py`: Defines `TracingContext`, wrapping `TraceStore` and `TokenTracingCallback` in a single client interface.
+-   `ledger_client.py`: Defines `LedgerClient`, encapsulating file-based locking/reading/committing operations to avoid direct dataset file manipulation.
+
+---
+
+## 6. Configuration & Runtime Environment (langgraph.json)
+
+The system's execution environment and graph deployment are configured via `langgraph.json` at the project root. This configuration defines the entry points and runtime environment for running under LangGraph Studio or container deployments:
+
+### `langgraph.json` Specs
+-   **Dependencies**: Specified as `["."]`, instructing the loader to treat the current working directory as the primary Python package.
+-   **Graphs**: Maps `batch_diacritization` to `langgraph_pipeline:build_studio_graph` as the entrypoint function for constructing the state machine graph.
+-   **Env**: Points to `.env` to load environment variables (such as `OPENAI_API_KEY`, `NVIDIA_API_KEY`, etc.) at loader initialization time.
+
+### Core Configurations
+1.  **Graph Deployment Entrypoint (`batch_diacritization`)**: Pointing to `build_studio_graph()`, it instantiates the compiled graph in read-only and trace-integrated environments.
+2.  **Upstream Library Robustness (`Rule 6: tanwīn fatḥ bug on alif maqṣūra`)**: Upstream library anomalies (specifically the tanwīn fatḥ bug where trailing letters are miscounted in older `pyarud` releases) are formally documented and regression-tested via `tests/test_pyarud_upstream_regressions.py` to prevent structural analysis failures.
+3.  **Diacritizer Generative Subagent**: The generative agent itself (`subagents/diacritizer.py`) runs as a pure generator that implements the multi-step prompt correction cycle, taking input skeleton text and formatting it according to the feedback loop reports.
+
