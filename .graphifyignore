@@ -1,0 +1,13 @@
+**/dataset/*
+
+# Ignore local outputs
+graphify-out/
+cache/
+
+# Ignore Jupyter temp files
+.ipynb_checkpoints/
+*.ipynb
+
+# Exclude all python virtual environments
+.venv/
+env/
