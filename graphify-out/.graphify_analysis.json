@@ -1,0 +1,644 @@
+{
+  "communities": {
+    "0": [
+      "config_meter_tables",
+      "config_meter_tables_rationale_1",
+      "langgraph_pipeline_make_advisory_stage",
+      "tests_test_advisory_ledger",
+      "tests_test_advisory_ledger_clean_ledger_environment",
+      "tests_test_advisory_ledger_rationale_1",
+      "tests_test_advisory_ledger_rationale_117",
+      "tests_test_advisory_ledger_rationale_140",
+      "tests_test_advisory_ledger_rationale_19",
+      "tests_test_advisory_ledger_rationale_41",
+      "tests_test_advisory_ledger_rationale_65",
+      "tests_test_advisory_ledger_rationale_91",
+      "tests_test_advisory_ledger_test_build_batched_advisory_payload",
+      "tests_test_advisory_ledger_test_duplicate_verse_id_prevention",
+      "tests_test_advisory_ledger_test_read_ledger_with_clear",
+      "tests_test_advisory_ledger_test_record_and_read_multiple_valid_verses",
+      "tests_test_advisory_ledger_test_record_locked_verse_fidelity_failure",
+      "tests_test_alignment_guards",
+      "tests_test_alignment_guards_clean_ledger_environment",
+      "tests_test_alignment_guards_rationale_1",
+      "tests_test_alignment_guards_rationale_124",
+      "tests_test_alignment_guards_rationale_154",
+      "tests_test_alignment_guards_rationale_21",
+      "tests_test_alignment_guards_rationale_43",
+      "tests_test_alignment_guards_rationale_85",
+      "tests_test_alignment_guards_test_validate_alignment_hallucinated_id",
+      "tests_test_alignment_guards_test_validate_alignment_mismatched_skeleton",
+      "tests_test_alignment_guards_test_validate_alignment_success",
+      "tests_test_alignment_guards_test_validate_naturalness_alignment_duplicate_id",
+      "tools_advisory_batch",
+      "tools_advisory_batch_build_batched_advisory_payload_tool",
+      "tools_advisory_batch_rationale_1",
+      "tools_advisory_batch_rationale_12",
+      "tools_advisory_ledger",
+      "tools_advisory_ledger_get_ledger_path",
+      "tools_advisory_ledger_py_path",
+      "tools_advisory_ledger_rationale_1",
+      "tools_advisory_ledger_rationale_33",
+      "tools_advisory_ledger_rationale_94",
+      "tools_advisory_ledger_read_ledger_tool",
+      "tools_advisory_ledger_record_locked_verse_tool",
+      "tools_alignment_guards",
+      "tools_alignment_guards_rationale_1",
+      "tools_alignment_guards_rationale_14",
+      "tools_alignment_guards_rationale_97",
+      "tools_alignment_guards_validate_advisory_batch_alignment",
+      "tools_alignment_guards_validate_naturalness_batch_alignment",
+      "tools_prosody_tools",
+      "tools_prosody_tools_rationale_1",
+      "tools_tracing",
+      "tools_tracing_current_trace",
+      "tools_tracing_get_store",
+      "tools_tracing_new_trace_id",
+      "tools_tracing_py_path",
+      "tools_tracing_rationale_1",
+      "tools_tracing_rationale_122",
+      "tools_tracing_rationale_571",
+      "tools_tracing_rationale_581",
+      "tools_tracing_trace",
+      "tools_tracing_trace_run"
+    ],
+    "1": [
+      "footstatus",
+      "healthlevel",
+      "verification_arabic_prosody_feedback",
+      "verification_arabic_prosody_feedback_analyze_and_report",
+      "verification_arabic_prosody_feedback_analyze_poem",
+      "verification_arabic_prosody_feedback_analyze_verse",
+      "verification_arabic_prosody_feedback_binary_to_ux",
+      "verification_arabic_prosody_feedback_enrich_foot",
+      "verification_arabic_prosody_feedback_enrich_hemistich",
+      "verification_arabic_prosody_feedback_foot_health",
+      "verification_arabic_prosody_feedback_footresult",
+      "verification_arabic_prosody_feedback_generate_diagnostics",
+      "verification_arabic_prosody_feedback_generate_poem_correction_report",
+      "verification_arabic_prosody_feedback_generate_verse_correction",
+      "verification_arabic_prosody_feedback_get_canonical_pattern",
+      "verification_arabic_prosody_feedback_get_processor",
+      "verification_arabic_prosody_feedback_get_tafeela_mnemonic",
+      "verification_arabic_prosody_feedback_hemistichresult",
+      "verification_arabic_prosody_feedback_identify_zihaf",
+      "verification_arabic_prosody_feedback_mora_diff",
+      "verification_arabic_prosody_feedback_pattern_to_class",
+      "verification_arabic_prosody_feedback_poemresult",
+      "verification_arabic_prosody_feedback_rationale_1",
+      "verification_arabic_prosody_feedback_rationale_1023",
+      "verification_arabic_prosody_feedback_rationale_1040",
+      "verification_arabic_prosody_feedback_rationale_122",
+      "verification_arabic_prosody_feedback_rationale_1270",
+      "verification_arabic_prosody_feedback_rationale_1349",
+      "verification_arabic_prosody_feedback_rationale_136",
+      "verification_arabic_prosody_feedback_rationale_148",
+      "verification_arabic_prosody_feedback_rationale_387",
+      "verification_arabic_prosody_feedback_rationale_399",
+      "verification_arabic_prosody_feedback_rationale_411",
+      "verification_arabic_prosody_feedback_rationale_425",
+      "verification_arabic_prosody_feedback_rationale_462",
+      "verification_arabic_prosody_feedback_rationale_481",
+      "verification_arabic_prosody_feedback_rationale_508",
+      "verification_arabic_prosody_feedback_rationale_566",
+      "verification_arabic_prosody_feedback_rationale_615",
+      "verification_arabic_prosody_feedback_rationale_673",
+      "verification_arabic_prosody_feedback_rationale_79",
+      "verification_arabic_prosody_feedback_rationale_799",
+      "verification_arabic_prosody_feedback_rationale_815",
+      "verification_arabic_prosody_feedback_rationale_828",
+      "verification_arabic_prosody_feedback_rationale_871",
+      "verification_arabic_prosody_feedback_rationale_906",
+      "verification_arabic_prosody_feedback_rationale_915",
+      "verification_arabic_prosody_feedback_rationale_990",
+      "verification_arabic_prosody_feedback_render_diff",
+      "verification_arabic_prosody_feedback_require_pyarud",
+      "verification_arabic_prosody_feedback_resolve_key",
+      "verification_arabic_prosody_feedback_resolve_meter_key",
+      "verification_arabic_prosody_feedback_similarity",
+      "verification_arabic_prosody_feedback_tafeela_label",
+      "verification_arabic_prosody_feedback_ux_to_binary",
+      "verification_arabic_prosody_feedback_verseresult"
+    ],
+    "2": [
+      "langgraph_pipeline",
+      "langgraph_pipeline_append_unique",
+      "langgraph_pipeline_batchstate",
+      "langgraph_pipeline_build_graph",
+      "langgraph_pipeline_build_langgraph_pipeline",
+      "langgraph_pipeline_build_studio_graph",
+      "langgraph_pipeline_call_advisory_model",
+      "langgraph_pipeline_cleanup_json_text",
+      "langgraph_pipeline_current_thread_id",
+      "langgraph_pipeline_diacritize_batch",
+      "langgraph_pipeline_extract_json",
+      "langgraph_pipeline_make_dispatch_diacritizer",
+      "langgraph_pipeline_merge_dicts",
+      "langgraph_pipeline_py_any",
+      "langgraph_pipeline_rationale_1",
+      "langgraph_pipeline_rationale_118",
+      "langgraph_pipeline_rationale_130",
+      "langgraph_pipeline_rationale_166",
+      "langgraph_pipeline_rationale_225",
+      "langgraph_pipeline_rationale_262",
+      "langgraph_pipeline_rationale_420",
+      "langgraph_pipeline_rationale_507",
+      "langgraph_pipeline_rationale_802",
+      "langgraph_pipeline_rationale_839",
+      "langgraph_pipeline_rationale_850",
+      "langgraph_pipeline_read_workspace_file",
+      "langgraph_pipeline_route_after_verify",
+      "langgraph_pipeline_run_irab_checker_batch",
+      "langgraph_pipeline_run_irab_checker_single",
+      "langgraph_pipeline_run_naturalness_critic_batch",
+      "langgraph_pipeline_run_naturalness_critic_single",
+      "langgraph_pipeline_run_one_batch",
+      "langgraph_pipeline_verify_pass",
+      "main",
+      "main_batches_by_meter",
+      "main_main",
+      "main_py_path",
+      "main_rationale_1",
+      "main_rationale_14",
+      "main_resolve_input_files",
+      "runnableconfig",
+      "runtime",
+      "runtime_rationale_1",
+      "subagents_diacritizer",
+      "subagents_diacritizer_rationale_1",
+      "subagents_formatter_call_salvage_agent",
+      "subagents_formatter_rationale_100",
+      "tools_prosody_tools_meter_schema_tool",
+      "tools_prosody_tools_rationale_24",
+      "typeddict"
+    ],
+    "3": [
+      "langgraph_pipeline_rationale_585",
+      "langgraph_pipeline_resolve_and_commit",
+      "tools_dataset_tools",
+      "tools_dataset_tools_append_locked",
+      "tools_dataset_tools_append_rejected",
+      "tools_dataset_tools_commit_verse_tool",
+      "tools_dataset_tools_iter_valid_records",
+      "tools_dataset_tools_load_seen",
+      "tools_dataset_tools_lock_file",
+      "tools_dataset_tools_log_disagreement",
+      "tools_dataset_tools_log_unresolved_tool",
+      "tools_dataset_tools_py_path",
+      "tools_dataset_tools_rationale_1",
+      "tools_dataset_tools_rationale_109",
+      "tools_dataset_tools_rationale_125",
+      "tools_dataset_tools_rationale_189",
+      "tools_dataset_tools_rationale_210",
+      "tools_dataset_tools_rationale_388",
+      "tools_dataset_tools_rationale_430",
+      "tools_dataset_tools_rejection_record",
+      "tools_dataset_tools_reset_seen_cache_for_tests",
+      "tools_dataset_tools_unlock_file",
+      "tools_dataset_tools_verse_hash",
+      "tools_fidelity_tools",
+      "tools_fidelity_tools_diff",
+      "tools_fidelity_tools_load_input_index",
+      "tools_fidelity_tools_normalize_text",
+      "tools_fidelity_tools_rationale_1",
+      "tools_fidelity_tools_rationale_139",
+      "tools_fidelity_tools_rationale_36",
+      "tools_fidelity_tools_rationale_43",
+      "tools_fidelity_tools_rationale_60",
+      "tools_fidelity_tools_rationale_88",
+      "tools_fidelity_tools_verify_skeleton_fidelity_tool",
+      "tools_prosody_tools_rationale_149",
+      "tools_prosody_tools_verify_single_verse_tool"
+    ],
+    "4": [
+      "tools_tracing_basecallbackhandler",
+      "tools_tracing_py_any",
+      "tools_tracing_rationale_133",
+      "tools_tracing_rationale_248",
+      "tools_tracing_tokentracingcallback",
+      "tools_tracing_tokentracingcallback_extract_subagent_type",
+      "tools_tracing_tokentracingcallback_finish_tool",
+      "tools_tracing_tokentracingcallback_init",
+      "tools_tracing_tokentracingcallback_log_llm_error",
+      "tools_tracing_tokentracingcallback_on_chain_start",
+      "tools_tracing_tokentracingcallback_on_chat_model_error",
+      "tools_tracing_tokentracingcallback_on_chat_model_start",
+      "tools_tracing_tokentracingcallback_on_llm_end",
+      "tools_tracing_tokentracingcallback_on_llm_error",
+      "tools_tracing_tokentracingcallback_on_llm_start",
+      "tools_tracing_tokentracingcallback_on_tool_end",
+      "tools_tracing_tokentracingcallback_on_tool_error",
+      "tools_tracing_tokentracingcallback_on_tool_start",
+      "tools_tracing_tokentracingcallback_record_llm_start",
+      "tools_tracing_tokentracingcallback_resolve_agent",
+      "tools_tracing_tokentracingcallback_resolve_model",
+      "tools_tracing_trace_post_init",
+      "tools_tracing_tracestore",
+      "tools_tracing_tracestore_close",
+      "tools_tracing_tracestore_end_run",
+      "tools_tracing_tracestore_init",
+      "tools_tracing_tracestore_init_schema",
+      "tools_tracing_tracestore_log_call",
+      "tools_tracing_tracestore_start_run",
+      "tools_tracing_utcnow_iso"
+    ],
+    "5": [
+      "tests_test_prosody_tools",
+      "tests_test_prosody_tools_rationale_1",
+      "tests_test_prosody_tools_test_commit_verse_rejects_failing_score",
+      "tests_test_prosody_tools_test_reconcile_rejects_out_of_range_word_index",
+      "tests_test_prosody_tools_test_reconcile_rejects_unknown_harakah",
+      "tests_test_prosody_tools_test_reconcile_reports_no_basic_mark_found",
+      "tests_test_prosody_tools_test_reconcile_swaps_damma_to_kasra",
+      "tests_test_prosody_tools_test_sanitizer_accepts_plain_arabic",
+      "tests_test_prosody_tools_test_sanitizer_allows_common_punctuation",
+      "tests_test_prosody_tools_test_sanitizer_rejects_control_char",
+      "tests_test_prosody_tools_test_sanitizer_rejects_unexpected_latin_injection",
+      "tests_test_prosody_tools_test_verify_batch_splits_locked_and_broken_correctly",
+      "tests_test_prosody_tools_test_verify_batch_structural_incompatibility",
+      "tools_prosody_tools_rationale_38",
+      "tools_prosody_tools_verify_batch_tool",
+      "tools_reconciliation_tools",
+      "tools_reconciliation_tools_needs_accusative_alif",
+      "tools_reconciliation_tools_rationale_1",
+      "tools_reconciliation_tools_rationale_70",
+      "tools_reconciliation_tools_rationale_91",
+      "tools_reconciliation_tools_reconcile_case_ending_tool",
+      "tools_sanitization_tools",
+      "tools_sanitization_tools_rationale_1",
+      "tools_sanitization_tools_rationale_30",
+      "tools_sanitization_tools_sanitize_output_tool"
+    ],
+    "6": [
+      "backends_model_provider",
+      "backends_model_provider_awith_retry",
+      "backends_model_provider_build_nvidia_model",
+      "backends_model_provider_get_model",
+      "backends_model_provider_is_retryable",
+      "backends_model_provider_patch_nvidia_error_masking",
+      "backends_model_provider_patch_retry",
+      "backends_model_provider_py_any",
+      "backends_model_provider_rationale_1",
+      "backends_model_provider_rationale_197",
+      "backends_model_provider_rationale_205",
+      "backends_model_provider_rationale_234",
+      "backends_model_provider_rationale_265",
+      "backends_model_provider_rationale_286",
+      "backends_model_provider_rationale_324",
+      "backends_model_provider_rationale_386",
+      "backends_model_provider_rationale_91",
+      "backends_model_provider_with_retry",
+      "basechatmodel",
+      "baseexception",
+      "t"
+    ],
+    "7": [
+      "connection",
+      "tools_session_bundle",
+      "tools_session_bundle_build_bundle",
+      "tools_session_bundle_capture",
+      "tools_session_bundle_main",
+      "tools_session_bundle_py_path",
+      "tools_session_bundle_rationale_1",
+      "tools_session_bundle_rationale_34",
+      "tools_session_bundle_section",
+      "tools_trace_report",
+      "tools_trace_report_connect",
+      "tools_trace_report_dump_calls",
+      "tools_trace_report_fmt_table",
+      "tools_trace_report_latest_trace_id",
+      "tools_trace_report_list_for_thread",
+      "tools_trace_report_list_runs",
+      "tools_trace_report_main",
+      "tools_trace_report_py_path",
+      "tools_trace_report_rationale_1",
+      "tools_trace_report_summarize"
+    ],
+    "8": [
+      "subagents_formatter",
+      "subagents_formatter_clean_and_normalize",
+      "subagents_formatter_heuristic_salvage",
+      "subagents_formatter_py_any",
+      "subagents_formatter_rationale_29",
+      "subagents_formatter_rationale_33",
+      "subagents_formatter_rationale_38",
+      "subagents_formatter_strip_diacritics",
+      "tests_test_formatter_salvage",
+      "tests_test_formatter_salvage_test_heuristic_salvage_exact_match",
+      "tests_test_formatter_salvage_test_heuristic_salvage_mismatched_length_closeness",
+      "tests_test_formatter_salvage_test_strip_diacritics"
+    ],
+    "9": [
+      "langgraph",
+      "langgraph_dependencies",
+      "langgraph_env",
+      "langgraph_graphs",
+      "langgraph_graphs_batch_diacritization",
+      "ref"
+    ],
+    "10": [
+      "scripts_contract_test_max_passes",
+      "scripts_contract_test_max_passes_fake_diacritize_batch",
+      "scripts_contract_test_max_passes_fake_log_unresolved",
+      "scripts_contract_test_max_passes_fake_verify_batch_tool",
+      "scripts_contract_test_max_passes_main",
+      "scripts_contract_test_max_passes_rationale_1"
+    ],
+    "11": [
+      "subagents_irab_checker_agent",
+      "subagents_irab_checker_agent_build_irab_checker_batch_subagent",
+      "subagents_irab_checker_agent_build_irab_checker_subagent",
+      "subagents_irab_checker_agent_rationale_1",
+      "subagents_irab_checker_agent_rationale_173",
+      "subagents_irab_checker_agent_rationale_337"
+    ],
+    "12": [
+      "subagents_naturalness_critic",
+      "subagents_naturalness_critic_build_naturalness_critic_batch_subagent",
+      "subagents_naturalness_critic_build_naturalness_critic_subagent",
+      "subagents_naturalness_critic_rationale_1",
+      "subagents_naturalness_critic_rationale_144",
+      "subagents_naturalness_critic_rationale_72"
+    ],
+    "13": [
+      "agents",
+      "docs_architecture",
+      "docs_configuration",
+      "docs_tracing",
+      "readme"
+    ],
+    "14": [
+      "scripts_contract_test_pass_loop",
+      "scripts_contract_test_pass_loop_fake_diacritize_batch",
+      "scripts_contract_test_pass_loop_fake_verify_batch_tool",
+      "scripts_contract_test_pass_loop_main",
+      "scripts_contract_test_pass_loop_rationale_1"
+    ],
+    "15": [
+      "scripts_contract_test_advisory_stage",
+      "scripts_contract_test_advisory_stage_fake_commit_verse_tool",
+      "scripts_contract_test_advisory_stage_main",
+      "scripts_contract_test_advisory_stage_rationale_1"
+    ],
+    "16": [
+      "tools_context_tools",
+      "tools_context_tools_rationale_1",
+      "tools_context_tools_rationale_30",
+      "tools_context_tools_summarize_correction_report_tool"
+    ],
+    "17": [
+      "agents_rule_2_locked_verses",
+      "agents_rule_5_max_passes",
+      "docs_architecture_orchestrator_loop"
+    ],
+    "18": [
+      "agents_rule_3_verification_code_read_only",
+      "agents_rule_4_dataset_writes",
+      "docs_configuration_security_model"
+    ],
+    "19": [
+      "_agents_rules_graphify",
+      "_agents_workflows_graphify"
+    ],
+    "20": [
+      "agents_rule_1_pyarud_reconciliation",
+      "docs_architecture_reconciliation_loop"
+    ],
+    "21": [
+      "docs_architecture_irab_checker",
+      "docs_architecture_naturalness_critic"
+    ],
+    "22": [
+      "docs_tracing_attribution_bug",
+      "phased_plan_v4_diacritizer_refactor"
+    ],
+    "23": [
+      "requirements",
+      "requirements_dev"
+    ],
+    "24": [
+      "agents_rule_6_tanwin_fath_bug"
+    ],
+    "25": [
+      "backends_init"
+    ],
+    "26": [
+      "config_init"
+    ],
+    "27": [
+      "docs_architecture_diacritizer_agent"
+    ],
+    "28": [
+      "docs_architecture_validation_core"
+    ],
+    "29": [
+      "docs_configuration_checkpoint_engine"
+    ],
+    "30": [
+      "docs_configuration_ephemeral_ledger"
+    ],
+    "31": [
+      "docs_tracing_attribution_mechanics"
+    ],
+    "32": [
+      "phased_plan_v4_diacritizer_refactor_background"
+    ],
+    "33": [
+      "subagents_init"
+    ],
+    "34": [
+      "tests_init"
+    ],
+    "35": [
+      "tools_init"
+    ],
+    "36": [
+      "verification_init"
+    ]
+  },
+  "cohesion": {
+    "0": 0.06779661016949153,
+    "1": 0.05584415584415584,
+    "2": 0.0636734693877551,
+    "3": 0.09206349206349207,
+    "4": 0.11494252873563218,
+    "5": 0.12,
+    "6": 0.1380952380952381,
+    "7": 0.19473684210526315,
+    "8": 0.2878787878787879,
+    "9": 0.3333333333333333,
+    "10": 0.5333333333333333,
+    "11": 0.3333333333333333,
+    "12": 0.3333333333333333,
+    "13": 0.5,
+    "14": 0.6,
+    "15": 0.6666666666666666,
+    "16": 0.5,
+    "17": 0.6666666666666666,
+    "18": 0.6666666666666666,
+    "19": 1.0,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0,
+    "23": 1.0,
+    "24": 1.0,
+    "25": 1.0,
+    "26": 1.0,
+    "27": 1.0,
+    "28": 1.0,
+    "29": 1.0,
+    "30": 1.0,
+    "31": 1.0,
+    "32": 1.0,
+    "33": 1.0,
+    "34": 1.0,
+    "35": 1.0,
+    "36": 1.0
+  },
+  "gods": [
+    {
+      "id": "tools_tracing_trace_run",
+      "label": "trace_run()",
+      "degree": 25
+    },
+    {
+      "id": "tools_tracing_tokentracingcallback",
+      "label": "TokenTracingCallback",
+      "degree": 20
+    },
+    {
+      "id": "tools_advisory_ledger_record_locked_verse_tool",
+      "label": "record_locked_verse_tool()",
+      "degree": 18
+    },
+    {
+      "id": "tools_advisory_ledger_read_ledger_tool",
+      "label": "read_ledger_tool()",
+      "degree": 16
+    },
+    {
+      "id": "tools_dataset_tools_commit_verse_tool",
+      "label": "commit_verse_tool()",
+      "degree": 13
+    },
+    {
+      "id": "verification_arabic_prosody_feedback_analyze_poem",
+      "label": "analyze_poem()",
+      "degree": 11
+    },
+    {
+      "id": "subagents_formatter_heuristic_salvage",
+      "label": "heuristic_salvage()",
+      "degree": 10
+    },
+    {
+      "id": "tools_alignment_guards_validate_advisory_batch_alignment",
+      "label": "validate_advisory_batch_alignment()",
+      "degree": 10
+    },
+    {
+      "id": "tools_reconciliation_tools_reconcile_case_ending_tool",
+      "label": "reconcile_case_ending_tool()",
+      "degree": 10
+    },
+    {
+      "id": "tools_tracing_tracestore",
+      "label": "TraceStore",
+      "degree": 10
+    }
+  ],
+  "surprises": [
+    {
+      "source": "build_langgraph_pipeline()",
+      "target": "get_model()",
+      "source_files": [
+        "langgraph_pipeline.py",
+        "backends/model_provider.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "_current_thread_id()",
+      "target": "current_trace()",
+      "source_files": [
+        "langgraph_pipeline.py",
+        "tools/tracing.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "_diacritize_batch()",
+      "target": "heuristic_salvage()",
+      "source_files": [
+        "langgraph_pipeline.py",
+        "subagents/formatter.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "verify_pass()",
+      "target": "record_locked_verse_tool()",
+      "source_files": [
+        "langgraph_pipeline.py",
+        "tools/advisory_ledger.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "verify_pass()",
+      "target": "log_unresolved_tool()",
+      "source_files": [
+        "langgraph_pipeline.py",
+        "tools/dataset_tools.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `trace_run()` connect `Community 0` to `Community 2`, `Community 4`, `Community 15`?",
+      "why": "High betweenness centrality (0.069) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `TokenTracingCallback` connect `Community 4` to `Community 0`?",
+      "why": "High betweenness centrality (0.065) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `heuristic_salvage()` connect `Community 8` to `Community 2`?",
+      "why": "High betweenness centrality (0.043) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `.`, `batch_diacritization`, `env` to the rest of the system?",
+      "why": "14 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 0` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.06779661016949153 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 1` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.05584415584415584 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 2` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.0636734693877551 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

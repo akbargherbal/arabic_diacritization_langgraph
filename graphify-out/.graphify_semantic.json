@@ -1,0 +1,495 @@
+{
+  "nodes": [
+    {
+      "id": "agents",
+      "label": "AGENTS.md",
+      "file_type": "document",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_rule_1_pyarud_reconciliation",
+      "label": "Rule 1: pyarud decides after reconciliation",
+      "file_type": "rationale",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Before applying the rule that pyarud wins in a disagreement, the system attempts to reconcile case-ending flags programmatically to avoid false-positive disagreements on poetry license."
+    },
+    {
+      "id": "agents_rule_2_locked_verses",
+      "label": "Rule 2: Locked Verses",
+      "file_type": "rationale",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Once a verse passes pyarud, it is locked. Locked verses are never resubmitted to the diacritizer to avoid the risk of degradation on subsequent passes."
+    },
+    {
+      "id": "agents_rule_3_verification_code_read_only",
+      "label": "Rule 3: Verification Code is Read-Only",
+      "file_type": "rationale",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "No subagent or custom tool can edit validation logic to prevent agents from hacking or bypassing checkers."
+    },
+    {
+      "id": "agents_rule_4_dataset_writes",
+      "label": "Rule 4: Dataset Writes via commit_verse Only",
+      "file_type": "rationale",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Dataset writes must go through a dedicated tool that runs a validation check before write, avoiding unsafe direct filesystem edits."
+    },
+    {
+      "id": "agents_rule_5_max_passes",
+      "label": "Rule 5: Max 3 Correction Passes",
+      "file_type": "rationale",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "To prevent infinite loops and forcing incorrect inputs, correction retries are capped at 3 passes, after which they are logged as unresolved."
+    },
+    {
+      "id": "agents_rule_6_tanwin_fath_bug",
+      "label": "Rule 6: tanwīn fatḥ bug on alif maqṣūra",
+      "file_type": "concept",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "pyarud miscounts syllables on words ending with tanwin fath on an alif maqsura, requiring phonetic normalization and metadata flags."
+    },
+    {
+      "id": "docs_architecture",
+      "label": "ARCHITECTURE.md",
+      "file_type": "document",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_architecture_orchestrator_loop",
+      "label": "Orchestrator Control Loop",
+      "file_type": "concept",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "A rigid LangGraph state machine controls execution flow rather than LLM routing, maintaining structured boundaries."
+    },
+    {
+      "id": "docs_architecture_diacritizer_agent",
+      "label": "Diacritizer (Generative Subagent)",
+      "file_type": "concept",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_architecture_irab_checker",
+      "label": "Irab Checker (Advisory Subagent)",
+      "file_type": "concept",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_architecture_naturalness_critic",
+      "label": "Naturalness Critic (Advisory Subagent)",
+      "file_type": "concept",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_architecture_validation_core",
+      "label": "Four-Axis Validation Core",
+      "file_type": "concept",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_architecture_reconciliation_loop",
+      "label": "Mechanical Case-Ending Reconciliation Loop",
+      "file_type": "concept",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Short Arabic vowels are metrically identical, so case-ending errors can be resolved programmatically with zero metrical cost."
+    },
+    {
+      "id": "docs_configuration",
+      "label": "CONFIGURATION.md",
+      "file_type": "document",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/CONFIGURATION.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_configuration_security_model",
+      "label": "Subagent Security Model",
+      "file_type": "concept",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/CONFIGURATION.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Protection is structural, enforced by narrow tool grants (binding explicit tools to each model call) instead of a runtime filesystem sandbox."
+    },
+    {
+      "id": "docs_configuration_checkpoint_engine",
+      "label": "local Checkpoint Engine",
+      "file_type": "concept",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/CONFIGURATION.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_configuration_ephemeral_ledger",
+      "label": "Ephemeral Ledger Security",
+      "file_type": "concept",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/CONFIGURATION.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_tracing",
+      "label": "TRACING.md",
+      "file_type": "document",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/TRACING.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_tracing_attribution_mechanics",
+      "label": "Trace Attribution Mechanics",
+      "file_type": "concept",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/TRACING.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_tracing_attribution_bug",
+      "label": "Attribution Mechanism Bug / Stale Design",
+      "file_type": "rationale",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/TRACING.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Tracing callback expects subagents to run via a task tool, but the LangGraph pipeline invokes functions directly, meaning all LLM calls are attributed to orchestrator. This is a known issue flagged in Phase 8."
+    },
+    {
+      "id": "phased_plan_v4_diacritizer_refactor",
+      "label": "PHASED_PLAN_v4_Diacritizer_Refactor.md",
+      "file_type": "document",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/PHASED_PLAN_v4_Diacritizer_Refactor.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "phased_plan_v4_diacritizer_refactor_background",
+      "label": "Diacritizer Refactor Background",
+      "file_type": "rationale",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/PHASED_PLAN_v4_Diacritizer_Refactor.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "The original pipeline dispatched one verse per model call, overloading diacritizer. The refactor uses a single batch call, removes mechanical meter teaching, and uses a formatter/salvage agent."
+    },
+    {
+      "id": "readme",
+      "label": "README.md",
+      "file_type": "document",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "_agents_rules_graphify",
+      "label": "graphify.md (Rules)",
+      "file_type": "document",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/.agents/rules/graphify.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "_agents_workflows_graphify",
+      "label": "graphify.md (Workflow)",
+      "file_type": "document",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/.agents/workflows/graphify.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "requirements",
+      "label": "requirements.txt",
+      "file_type": "document",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/requirements.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "requirements_dev",
+      "label": "requirements-dev.txt",
+      "file_type": "document",
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/requirements-dev.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "docs_architecture",
+      "target": "agents",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_orchestrator_loop",
+      "target": "agents_rule_5_max_passes",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_orchestrator_loop",
+      "target": "agents_rule_2_locked_verses",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_reconciliation_loop",
+      "target": "agents_rule_1_pyarud_reconciliation",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_configuration_security_model",
+      "target": "agents_rule_3_verification_code_read_only",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/CONFIGURATION.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_configuration_security_model",
+      "target": "agents_rule_4_dataset_writes",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/CONFIGURATION.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_tracing_attribution_bug",
+      "target": "phased_plan_v4_diacritizer_refactor",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/TRACING.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme",
+      "target": "docs_architecture",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme",
+      "target": "docs_configuration",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme",
+      "target": "docs_tracing",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme",
+      "target": "agents",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "_agents_workflows_graphify",
+      "target": "_agents_rules_graphify",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/.agents/workflows/graphify.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "requirements_dev",
+      "target": "requirements",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/requirements-dev.txt",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_irab_checker",
+      "target": "docs_architecture_naturalness_critic",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "diacritization_agents_flow",
+      "label": "Arabic Diacritization and Verification Flow",
+      "nodes": [
+        "docs_architecture_diacritizer_agent",
+        "docs_architecture_irab_checker",
+        "docs_architecture_naturalness_critic"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/docs/ARCHITECTURE.md"
+    },
+    {
+      "id": "validation_deciding_axes",
+      "label": "Deciding Validation Rules",
+      "nodes": [
+        "agents_rule_1_pyarud_reconciliation",
+        "agents_rule_3_verification_code_read_only",
+        "agents_rule_4_dataset_writes"
+      ],
+      "relation": "implement",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/akbar/Jupyter_Notebooks/AntiGravity/arabic_diacritization_langgraph/AGENTS.md"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

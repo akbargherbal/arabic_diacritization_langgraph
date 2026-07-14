@@ -20,16 +20,24 @@ This module is **fully standalone**: it embeds the subset of
 that it depends on, so it can run without that file being present.  It still
 requires **pyarud** (``pip install pyarud``) for the actual prosodic analysis.
 
-**Upstream Bug / Known Limitation:**
-Due to an upstream bug in `pyarud`'s text converter (`arudi.py`), words ending
-with a tanwīn fatḥ on an alif maqṣūra (e.g., 'أَسًى', 'هُدًى', 'فَتًى') are scanned
-incorrectly. The converter turns the tanwīn into a 'ن' but fails to skip the
-trailing 'ى', appending an extra silent/sākin unit (e.g., rewriting 'أَسًى' as
-'أسنى' instead of the correct 'أسن'). This results in an inflated mora count
-and false "broken" diagnostics.
+**Historical Upstream Bug (status: not reproducible as of pyarud==0.1.10):**
+An earlier version of `pyarud`'s text converter (`arudi.py`) reportedly
+mis-scanned words ending with a tanwīn fatḥ on an alif maqṣūra (e.g.,
+'أَسًى', 'هُدًى', 'فَتًى') -- turning the tanwīn into a 'ن' but failing to skip
+the trailing 'ى', appending an extra silent/sākin unit (e.g., rewriting
+'أَسًى' as 'أسنى' instead of the correct 'أسن'). That would inflate the mora
+count and produce false "broken" diagnostics. No phonetic-normalization
+workaround for this was ever implemented in this codebase -- only documented
+here.
 
-*Workaround:* Phonetically normalize such input words before analysis (e.g.,
-rewrite 'أَسًى' to 'أَسَنْ' or 'هُدًى' to 'هُدَنْ') to neutralize this behavior.
+Verified against the currently pinned `pyarud==0.1.10`
+(`ArudiConverter.prepare_text`), this conversion is now correct for all
+sample words above ('أَسًى' -> ('أسن', '110'), matching the described fix, not
+the described bug). See
+`tests/test_pyarud_upstream_regressions.py::test_tanwin_fatha_alif_maqsura_conversion_is_correct`,
+which pins this behavior as a regression guard: if a future `pyarud` upgrade
+reintroduces the bug, that test fails loudly instead of silently corrupting
+scansion results. Do not bump the `pyarud` pin without re-running that test.
 """
 
 from __future__ import annotations

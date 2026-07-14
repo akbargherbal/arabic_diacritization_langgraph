@@ -32,10 +32,15 @@ from difflib import SequenceMatcher
 
 INPUTS_DIR = pathlib.Path(__file__).resolve().parent.parent / "dataset" / "inputs"
 
-# Same skeleton alphabet as sanitization_tools.py's normalize_text.
-# TODO: import from sanitization_tools instead of duplicating, once that
-# module exposes AR_CHARS/normalize_text as public names rather than
-# inlining them locally. Until then, keep the two lists in sync by hand.
+# NOTE: this alphabet is specific to the Fidelity axis's skeleton-comparison
+# use case (hamza-seat and alif-maqsura/ya variants deliberately kept
+# distinct -- see normalize_text below). sanitization_tools.py solves a
+# different problem (rejecting disallowed Unicode code points/control chars
+# via ALLOWED_RANGES) and does not define AR_CHARS or normalize_text, so
+# there's nothing to import from it. A prior version of this comment
+# claimed the two modules duplicated this list; that's no longer accurate
+# and the two are not expected to converge -- leave this list local to this
+# module.
 AR_CHARS = frozenset(" ءأؤإئابةتثجحخدذرزسشصضطظعغفقكلمنهوىي")
 
 
@@ -88,66 +93,47 @@ def verify_skeleton_fidelity_tool(verse_id: str, sadr: str, ajuz: str) -> dict:
     """Compare the normalized (diacritics-stripped) skeleton of the
     proposed committed text against the normalized skeleton of the
     trusted original input for this verse_id.
-
-    Deliberately does NOT accept the "original" as a parameter -- see
-    module docstring. Looks it up itself.
     """
     index = _load_input_index()
-    original = index.get(verse_id)
+    ref = index.get(verse_id)
+    if not ref:
+        return {"match": False, "reason": f"unknown verse_id: {verse_id}"}
 
-    if original is None:
-        return {
-            "match": False,
-            "verse_id": verse_id,
-            "found_input": False,
-            "sadr_match": None,
-            "ajuz_match": None,
-            "sadr_diff": None,
-            "ajuz_diff": None,
-            "similarity": None,
-            "reason": f"verse_id {verse_id!r} not found in dataset/inputs/*.jsonl",
-        }
+    ref_sadr = normalize_text(ref["sadr"])
+    ref_ajuz = normalize_text(ref["ajuz"])
+    prop_sadr = normalize_text(sadr)
+    prop_ajuz = normalize_text(ajuz)
 
-    norm_sadr_in = normalize_text(original["sadr"])
-    norm_ajuz_in = normalize_text(original["ajuz"])
-    norm_sadr_out = normalize_text(sadr)
-    norm_ajuz_out = normalize_text(ajuz)
+    sadr_match = ref_sadr == prop_sadr
+    ajuz_match = ref_ajuz == prop_ajuz
 
-    sadr_match = norm_sadr_in == norm_sadr_out
-    ajuz_match = norm_ajuz_in == norm_ajuz_out
+    if sadr_match and ajuz_match:
+        return {"match": True, "reason": None}
 
-    full_in = f"{norm_sadr_in} {norm_ajuz_in}"
-    full_out = f"{norm_sadr_out} {norm_ajuz_out}"
-    similarity = SequenceMatcher(None, full_in, full_out).ratio()
+    # Compute a helpful character-level diff if they mismatch
+    sadr_diff = ""
+    if not sadr_match:
+        matcher = SequenceMatcher(None, ref_sadr, prop_sadr)
+        diffs = []
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == "equal":
+                continue
+            orig = ref_sadr[i1:i2]
+            prop = prop_sadr[j1:j2]
+            diffs.append(f"[{orig} -> {prop}]")
+        sadr_diff = "Sadr mismatch: " + " ".join(diffs)
 
-    return {
-        "match": sadr_match and ajuz_match,
-        "verse_id": verse_id,
-        "found_input": True,
-        "sadr_match": sadr_match,
-        "ajuz_match": ajuz_match,
-        "sadr_diff": None if sadr_match else _diff(norm_sadr_in, norm_sadr_out),
-        "ajuz_diff": None if ajuz_match else _diff(norm_ajuz_in, norm_ajuz_out),
-        # Low similarity (~<0.3) => probably a different verse entirely.
-        # High similarity but match=False (~>0.9) => probably a 1-2
-        # letter substitution. Useful for triage in the rejection log.
-        "similarity": round(similarity, 4),
-    }
+    ajuz_diff = ""
+    if not ajuz_match:
+        matcher = SequenceMatcher(None, ref_ajuz, prop_ajuz)
+        diffs = []
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == "equal":
+                continue
+            orig = ref_ajuz[i1:i2]
+            prop = prop_ajuz[j1:j2]
+            diffs.append(f"[{orig} -> {prop}]")
+        ajuz_diff = "Ajuz mismatch: " + " ".join(diffs)
 
-
-def _diff(expected: str, actual: str) -> str:
-    """Char-level diff for logs/disagreements records, not for display --
-    lets a human see exactly what drifted without re-deriving it."""
-    ops = SequenceMatcher(None, expected, actual).get_opcodes()
-    parts = []
-    for tag, i1, i2, j1, j2 in ops:
-        if tag == "equal":
-            continue
-        parts.append(
-            f"{tag}: expected[{i1}:{i2}]={expected[i1:i2]!r} -> actual[{j1}:{j2}]={actual[j1:j2]!r}"
-        )
-    return (
-        "; ".join(parts)
-        if parts
-        else "(no char-level diff -- check whitespace/segmentation)"
-    )
+    reason = "; ".join(filter(None, [sadr_diff, ajuz_diff]))
+    return {"match": False, "reason": reason}

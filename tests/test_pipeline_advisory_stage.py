@@ -1,35 +1,41 @@
 """
-scripts/contract_test_advisory_stage.py
-=========================================
+tests/test_pipeline_advisory_stage.py
+========================================
+Pytest port of scripts/contract_test_advisory_stage.py (Phase 0 of
+docs/REFACTOR_PLAN.md). Same fakes, same assertions, same four scenarios,
+split into four independent test functions so a failure in one scenario
+doesn't hide the others.
+
 Exercises advisory_stage / resolve_and_commit end-to-end using the REAL
 tools.advisory_ledger / tools.alignment_guards / tools.reconciliation_tools
-code, but with mock boundaries so no live dataset/verses.jsonl writes occur
-(preserving the Task 2.4 locked-decision boundary).
-
-Run: PYTHONPATH=. python3 scripts/contract_test_advisory_stage.py
+code, but with mock boundaries so no live dataset/verses.jsonl writes occur.
 """
 
 from unittest.mock import MagicMock, patch
 
 import pipeline.advisory_stage as advisory_stage
-import pipeline.verify_stage as verify_stage
-
-COMMIT_CALLS = []
+from tools.tracing import trace_run
 
 
-def fake_commit_verse_tool(**kwargs):
-    COMMIT_CALLS.append(kwargs)
-    return {
-        "committed": True,
-        "needs_review": kwargs.get("irab_flag", False)
-        or kwargs.get("naturalness_flag", False),
-    }
+def _fake_commit_verse_tool(commit_calls):
+    def _commit(**kwargs):
+        commit_calls.append(kwargs)
+        return {
+            "committed": True,
+            "needs_review": kwargs.get("irab_flag", False)
+            or kwargs.get("naturalness_flag", False),
+        }
+
+    return _commit
 
 
-def main():
-    # --- Scenario A: batched path, all clean (no flags) ---
+def test_scenario_a_clean_batched_path_commits_with_no_flags():
+    commit_calls = []
+
     with patch.object(
-        advisory_stage, "commit_verse_tool", side_effect=fake_commit_verse_tool
+        advisory_stage,
+        "commit_verse_tool",
+        side_effect=_fake_commit_verse_tool(commit_calls),
     ), patch(
         "tools.advisory_ledger.verify_skeleton_fidelity_tool",
         return_value={"match": True},
@@ -52,11 +58,11 @@ def main():
         ],
     ):
 
-        from tools.tracing import trace_run
-
         with trace_run(langgraph_thread_id="contract_advisory_A"):
-            verify_stage.record_locked_verse_tool("V1", "سدر 1", "عجز 1", "ramal")
-            verify_stage.record_locked_verse_tool("V2", "سدر 2", "عجز 2", "ramal")
+            import tools.advisory_ledger as ledger
+
+            ledger.record_locked_verse_tool("V1", "سدر 1", "عجز 1", "ramal")
+            ledger.record_locked_verse_tool("V2", "سدر 2", "عجز 2", "ramal")
 
             state = {
                 "verses": [
@@ -74,19 +80,14 @@ def main():
             node = advisory_stage.make_advisory_stage(MagicMock())
             node(state)
 
-    assert (
-        len(COMMIT_CALLS) == 2
-    ), f"FAIL: expected 2 commits (clean batch), got {len(COMMIT_CALLS)}"
-    for c in COMMIT_CALLS:
-        assert not c.get("irab_flag") and not c.get(
-            "naturalness_flag"
-        ), f"FAIL: expected clean commit, got {c}"
-    print(
-        "Scenario A (clean batched path) PASSED:", [c["verse_id"] for c in COMMIT_CALLS]
-    )
+    assert len(commit_calls) == 2
+    for c in commit_calls:
+        assert not c.get("irab_flag") and not c.get("naturalness_flag")
 
-    # --- Scenario B: case_ending_swap reconciles successfully (resolved, not a disagreement) ---
-    COMMIT_CALLS.clear()
+
+def test_scenario_b_case_ending_swap_reconciles_successfully():
+    commit_calls = []
+
     with patch.object(
         advisory_stage,
         "reconcile_case_ending_tool",
@@ -96,10 +97,12 @@ def main():
         "verify_single_verse_tool",
         return_value={"is_sound": True, "combined_score": 1.0, "issues": []},
     ), patch.object(
-        advisory_stage, "commit_verse_tool", side_effect=fake_commit_verse_tool
+        advisory_stage,
+        "commit_verse_tool",
+        side_effect=_fake_commit_verse_tool(commit_calls),
     ):
 
-        result = advisory_stage.resolve_and_commit(
+        advisory_stage.resolve_and_commit(
             verse_id="V3",
             sadr="على الكتبُ",
             ajuz="عجز 3",
@@ -114,20 +117,20 @@ def main():
             },
             naturalness_verdict={"natural": True, "note": ""},
         )
-    assert len(COMMIT_CALLS) == 1
-    c = COMMIT_CALLS[0]
-    assert (
-        c["reconciled"] is True
-        and c["sadr"] == "على الكتبِ"
-        and c["original_sadr"] == "على الكتبُ"
-    )
+
+    assert len(commit_calls) == 1
+    c = commit_calls[0]
+    assert c["reconciled"] is True
+    assert c["sadr"] == "على الكتبِ"
+    assert c["original_sadr"] == "على الكتبُ"
     assert not c.get(
         "irab_flag"
-    ), "FAIL: a resolved reconciliation must not be logged as irab_flag=True"
-    print("Scenario B (reconciliation succeeds) PASSED:", c)
+    ), "a resolved reconciliation must not be logged as irab_flag=True"
 
-    # --- Scenario C: reconciliation fails re-verify -> falls back to precedence rule (pyarud wins, original text) ---
-    COMMIT_CALLS.clear()
+
+def test_scenario_c_failed_reconciliation_falls_back_to_pyarud_wins_precedence():
+    commit_calls = []
+
     with patch.object(
         advisory_stage,
         "reconcile_case_ending_tool",
@@ -137,7 +140,9 @@ def main():
         "verify_single_verse_tool",
         return_value={"is_sound": False, "combined_score": 0.5, "issues": ["broken"]},
     ), patch.object(
-        advisory_stage, "commit_verse_tool", side_effect=fake_commit_verse_tool
+        advisory_stage,
+        "commit_verse_tool",
+        side_effect=_fake_commit_verse_tool(commit_calls),
     ):
 
         advisory_stage.resolve_and_commit(
@@ -155,19 +160,21 @@ def main():
             },
             naturalness_verdict={"natural": True, "note": ""},
         )
-    assert len(COMMIT_CALLS) == 1
-    c = COMMIT_CALLS[0]
-    assert (
-        c["sadr"] == "على الكتبُ"
-        and c.get("irab_flag") is True
-        and c.get("reconciled", False) is False
-    )
-    print("Scenario C (reconciliation fails -> pyarud-wins precedence) PASSED:", c)
 
-    # --- Scenario D: alignment guard failure triggers fallback to single-verse dispatch ---
-    COMMIT_CALLS.clear()
+    assert len(commit_calls) == 1
+    c = commit_calls[0]
+    assert c["sadr"] == "على الكتبُ"
+    assert c.get("irab_flag") is True
+    assert c.get("reconciled", False) is False
+
+
+def test_scenario_d_alignment_guard_failure_falls_back_to_per_verse_dispatch():
+    commit_calls = []
+
     with patch.object(
-        advisory_stage, "commit_verse_tool", side_effect=fake_commit_verse_tool
+        advisory_stage,
+        "commit_verse_tool",
+        side_effect=_fake_commit_verse_tool(commit_calls),
     ), patch(
         "tools.advisory_ledger.verify_skeleton_fidelity_tool",
         return_value={"match": True},
@@ -202,10 +209,10 @@ def main():
         return_value={"natural": True, "note": ""},
     ):
 
-        from tools.tracing import trace_run
-
         with trace_run(langgraph_thread_id="contract_advisory_D"):
-            verify_stage.record_locked_verse_tool("V5", "سدر 5", "عجز 5", "ramal")
+            import tools.advisory_ledger as ledger
+
+            ledger.record_locked_verse_tool("V5", "سدر 5", "عجز 5", "ramal")
             state = {
                 "verses": [{"verse_id": "V5", "sadr": "سدر 5", "ajuz": "عجز 5"}],
                 "meter_name": "ramal",
@@ -220,15 +227,6 @@ def main():
             node(state)
 
     assert (
-        len(COMMIT_CALLS) == 1
-    ), f"FAIL: expected fallback path to still commit V5, got {COMMIT_CALLS}"
-    print(
-        "Scenario D (alignment-guard failure -> per-verse fallback) PASSED:",
-        COMMIT_CALLS[0]["verse_id"],
-    )
-
-    print("\nALL ADVISORY_STAGE CONTRACT SCENARIOS PASSED.")
-
-
-if __name__ == "__main__":
-    main()
+        len(commit_calls) == 1
+    ), f"expected fallback path to still commit V5, got {commit_calls}"
+    assert commit_calls[0]["verse_id"] == "V5"

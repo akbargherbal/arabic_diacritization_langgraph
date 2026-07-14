@@ -20,12 +20,19 @@ Run: PYTHONPATH=. python3 scripts/contract_test_pass_loop.py
 import json
 from unittest.mock import MagicMock, patch
 
-import langgraph_pipeline as lp
+import pipeline.diacritize_stage as diacritize_stage
+import pipeline.verify_stage as verify_stage
+import pipeline.advisory_stage as advisory_stage
+from pipeline.graph import build_graph
 
-CALL_LOG = []  # list of ("dispatch", pass_number, [verse_ids]) / ("verify", pass_number)
+CALL_LOG = (
+    []
+)  # list of ("dispatch", pass_number, [verse_ids]) / ("verify", pass_number)
 
 
-def fake_diacritize_batch(model, targets, meter_name, report_path, pass_number, config=None):
+def fake_diacritize_batch(
+    model, targets, meter_name, report_path, pass_number, config=None
+):
     drafts = {}
     for verse in targets:
         CALL_LOG.append(("dispatch_verse", pass_number, verse["verse_id"]))
@@ -40,9 +47,27 @@ def fake_diacritize_batch(model, targets, meter_name, report_path, pass_number, 
 #           pass 2 -> verse B locks, verse C stays broken;
 #           pass 3 -> verse C locks. Then advisory_stage should run.
 VERIFY_SEQUENCE = [
-    {"locked": ["A"], "broken": ["B", "C"], "structurally_incompatible": [], "report_path": None, "poem_result_json": "{}"},
-    {"locked": ["B"], "broken": ["C"], "structurally_incompatible": [], "report_path": None, "poem_result_json": "{}"},
-    {"locked": ["C"], "broken": [], "structurally_incompatible": [], "report_path": None, "poem_result_json": "{}"},
+    {
+        "locked": ["A"],
+        "broken": ["B", "C"],
+        "structurally_incompatible": [],
+        "report_path": None,
+        "poem_result_json": "{}",
+    },
+    {
+        "locked": ["B"],
+        "broken": ["C"],
+        "structurally_incompatible": [],
+        "report_path": None,
+        "poem_result_json": "{}",
+    },
+    {
+        "locked": ["C"],
+        "broken": [],
+        "structurally_incompatible": [],
+        "report_path": None,
+        "poem_result_json": "{}",
+    },
 ]
 _verify_call_index = {"i": 0}
 
@@ -61,13 +86,21 @@ def main():
         {"verse_id": "C", "sadr": "seed c", "ajuz": "c2"},
     ]
 
-    with patch.object(lp, "_diacritize_batch", side_effect=fake_diacritize_batch), \
-         patch.object(lp, "verify_batch_tool", side_effect=fake_verify_batch_tool), \
-         patch.object(lp, "record_locked_verse_tool", return_value={"recorded": True}), \
-         patch.object(lp, "log_unresolved_tool", return_value={"logged": True}), \
-         patch.object(lp, "build_batched_advisory_payload_tool", return_value={"payload": None}):
+    with patch.object(
+        diacritize_stage, "_diacritize_batch", side_effect=fake_diacritize_batch
+    ), patch.object(
+        verify_stage, "verify_batch_tool", side_effect=fake_verify_batch_tool
+    ), patch.object(
+        verify_stage, "record_locked_verse_tool", return_value={"recorded": True}
+    ), patch.object(
+        verify_stage, "log_unresolved_tool", return_value={"logged": True}
+    ), patch.object(
+        advisory_stage,
+        "build_batched_advisory_payload_tool",
+        return_value={"payload": None},
+    ):
 
-        graph = lp.build_graph(MagicMock(), MagicMock())
+        graph = build_graph(MagicMock(), MagicMock())
 
         initial_state = {
             "verses": verses,
@@ -80,7 +113,9 @@ def main():
             "report_path": None,
             "thread_id": "contract_test",
         }
-        final_state = graph.invoke(initial_state, config={"configurable": {"thread_id": "contract_test"}})
+        final_state = graph.invoke(
+            initial_state, config={"configurable": {"thread_id": "contract_test"}}
+        )
 
     print("=== CALL LOG ===")
     for entry in CALL_LOG:
@@ -100,20 +135,33 @@ def main():
         kind = "D" if e[0] == "dispatch_verse" else "V"
         if not collapsed or collapsed[-1] != kind:
             collapsed.append(kind)
-    assert collapsed == ["D", "V"] * 3, f"FAIL: dispatch/verify did not alternate strictly: {collapsed}"
+    assert (
+        collapsed == ["D", "V"] * 3
+    ), f"FAIL: dispatch/verify did not alternate strictly: {collapsed}"
 
     # 2. Correct broken target filtering per pass
     wave1 = {e[2] for e in dispatch_events if e[1] == 1}
     wave2 = {e[2] for e in dispatch_events if e[1] == 2}
     wave3 = {e[2] for e in dispatch_events if e[1] == 3}
-    assert wave1 == {"A", "B", "C"}, f"FAIL: pass 1 should dispatch ALL verses unconditionally, got {wave1}"
-    assert wave2 == {"B", "C"}, f"FAIL: pass 2 should dispatch only still-broken verses, got {wave2}"
-    assert wave3 == {"C"}, f"FAIL: pass 3 should dispatch only still-broken verses, got {wave3}"
+    assert wave1 == {
+        "A",
+        "B",
+        "C",
+    }, f"FAIL: pass 1 should dispatch ALL verses unconditionally, got {wave1}"
+    assert wave2 == {
+        "B",
+        "C",
+    }, f"FAIL: pass 2 should dispatch only still-broken verses, got {wave2}"
+    assert wave3 == {
+        "C"
+    }, f"FAIL: pass 3 should dispatch only still-broken verses, got {wave3}"
 
     # 3. No double dispatches in the same pass
     for pass_num in (1, 2, 3):
         ids_this_pass = [e[2] for e in dispatch_events if e[1] == pass_num]
-        assert len(ids_this_pass) == len(set(ids_this_pass)), f"FAIL: duplicate dispatch within pass {pass_num}"
+        assert len(ids_this_pass) == len(
+            set(ids_this_pass)
+        ), f"FAIL: duplicate dispatch within pass {pass_num}"
 
     # 4. Correct resolution
     assert set(final_state["locked"]) == {"A", "B", "C"}
