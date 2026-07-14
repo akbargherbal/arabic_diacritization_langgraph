@@ -19,6 +19,15 @@ importing commit_verse_tool/log_unresolved_tool/read_ledger_tool/
 build_batched_advisory_payload_tool directly. Patch
 `pipeline.advisory_stage.LedgerClient` (e.g.
 `patch.object(LedgerClient, "commit", ...)`) when testing those paths.
+
+Phase 5 of PHASED_PLAN.md: the batched-vs-sequential-fallback shape
+(batch call -> alignment guard -> per-verse fallback) that used to be
+implemented separately for irab_checker and naturalness_critic is now
+one shared `run_with_batch_fallback()` helper, called once per checker
+from `make_advisory_stage`. It still calls `run_irab_checker_batch`,
+`run_naturalness_critic_batch`, `run_irab_checker_single`, and
+`run_naturalness_critic_single` as bare names resolved via this
+module's globals, so those remain the patch points for tests.
 """
 
 from __future__ import annotations
@@ -96,6 +105,51 @@ def run_naturalness_critic_single(model, verse: dict) -> dict:
     return _call_advisory_model(
         model, NATURALNESS_SYSTEM_PROMPT, payload, "naturalness_critic"
     )
+
+
+# ===========================================================================
+# Phase 5 of PHASED_PLAN.md: shared batch/alignment-guard/fallback shape
+# ===========================================================================
+
+
+def run_with_batch_fallback(
+    model, payload: str, ledger_verses: list[dict], checkers: list[tuple]
+) -> dict[str, dict[str, dict]]:
+    """Consolidates the batch-call -> alignment-guard -> per-verse-fallback
+    shape that used to be hand-written twice (once for irab_checker, once
+    for naturalness_critic) inside `advisory_stage`.
+
+    `checkers` is a list of (batch_fn, single_fn, alignment_guard, tag)
+    tuples. Each checker's batch_fn is attempted once and validated with
+    its alignment_guard. Per ARCHITECTURE.md's own description of the
+    fallback rule -- "If either alignment guard fails ... the orchestrator
+    ... falls back to calling standard single-verse subagents (irab_checker
+    and naturalness_critic) sequentially" -- if ANY checker's guard fails,
+    EVERY checker falls back to per-verse single_fn dispatch, not just the
+    one that failed. This is why the fallback decision is made jointly
+    here rather than inside each checker's own iteration.
+
+    Returns {tag: {verse_id: verdict}}.
+    """
+    attempts = []
+    for batch_fn, single_fn, alignment_guard, tag in checkers:
+        verdicts = batch_fn(model, payload)
+        ok, reason = alignment_guard(verdicts)
+        attempts.append((single_fn, tag, verdicts, ok, reason))
+
+    overall_ok = all(ok for _, _, _, ok, _ in attempts)
+
+    results: dict[str, dict[str, dict]] = {}
+    for single_fn, tag, verdicts, ok, reason in attempts:
+        if overall_ok:
+            results[tag] = {v["verse_id"]: v for v in verdicts}
+            continue
+        if not ok:
+            print(
+                f"[!] {tag} alignment guard failed: {reason} -- falling back to per-verse dispatch."
+            )
+        results[tag] = {lv["verse_id"]: single_fn(model, lv) for lv in ledger_verses}
+    return results
 
 
 # ===========================================================================
@@ -244,35 +298,31 @@ def make_advisory_stage(model):
 
         ledger_verses = json.loads(payload)  # [{verse_id, sadr, ajuz}, ...]
 
-        # Step 4: dispatch batched irab_checker_batch / naturalness_critic_batch.
-        irab_verdicts = run_irab_checker_batch(model, payload)
-        naturalness_verdicts = run_naturalness_critic_batch(model, payload)
-
-        # Step 5
-        irab_ok, irab_reason = validate_advisory_batch_alignment(irab_verdicts)
-        nat_ok, nat_reason = validate_naturalness_batch_alignment(naturalness_verdicts)
-
-        irab_by_id: dict[str, dict] = {}
-        nat_by_id: dict[str, dict] = {}
-
-        if irab_ok and nat_ok:
-            # Step 7: proceed with batch verdicts.
-            irab_by_id = {v["verse_id"]: v for v in irab_verdicts}
-            nat_by_id = {v["verse_id"]: v for v in naturalness_verdicts}
-        else:
-            # Step 6: fall back to per-verse single dispatch for EVERY verse
-            # in this batch, and log which guard failed and why.
-            if not irab_ok:
-                print(
-                    f"[!] irab_checker_batch alignment guard failed: {irab_reason} -- falling back to per-verse dispatch."
-                )
-            if not nat_ok:
-                print(
-                    f"[!] naturalness_critic_batch alignment guard failed: {nat_reason} -- falling back to per-verse dispatch."
-                )
-            for lv in ledger_verses:
-                irab_by_id[lv["verse_id"]] = run_irab_checker_single(model, lv)
-                nat_by_id[lv["verse_id"]] = run_naturalness_critic_single(model, lv)
+        # Steps 4-6: dispatch batched irab_checker_batch / naturalness_critic_batch,
+        # validate each with its alignment guard, and fall back to per-verse
+        # single dispatch for BOTH checkers if either guard fails (Phase 5
+        # of PHASED_PLAN.md consolidates this shape into one helper).
+        results = run_with_batch_fallback(
+            model,
+            payload,
+            ledger_verses,
+            checkers=[
+                (
+                    run_irab_checker_batch,
+                    run_irab_checker_single,
+                    validate_advisory_batch_alignment,
+                    "irab_checker_batch",
+                ),
+                (
+                    run_naturalness_critic_batch,
+                    run_naturalness_critic_single,
+                    validate_naturalness_batch_alignment,
+                    "naturalness_critic_batch",
+                ),
+            ],
+        )
+        irab_by_id = results["irab_checker_batch"]
+        nat_by_id = results["naturalness_critic_batch"]
 
         # Steps 6/7 continued: resolve/commit every verse in the ledger.
         commit_results = {}
